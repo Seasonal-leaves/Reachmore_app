@@ -37,5 +37,10 @@ def create_app():
 
 app, api = create_app()
 
+from applications.user_api import *
+
+api.add_resource(UserRegistration, '/register')
+
+
 if __name__ == '__main__':
     app.run(debug=True)
