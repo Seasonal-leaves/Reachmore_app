@@ -40,6 +40,50 @@ app, api = create_app()
 from applications.user_api import *
 
 api.add_resource(UserRegistration, '/register')
+api.add_resource(UserLogin, '/login')
+api.add_resource(UpdateUserDetails, '/user/update-profile')
+api.add_resource(UserLogout, '/logout')
+
+from applications.crud_api import *
+
+
+# admin api endpoints
+api.add_resource(AdminApproveSponsor, '/admin/approve-sponsor/<int:sponsor_id>')
+api.add_resource(PendingApprovals, '/admin/pending-approvals')
+api.add_resource(AdminUserManagement, '/admin/user-management')
+api.add_resource(AdminStatisticsResource, '/admin/statistics')
+api.add_resource(AdminFlagResource, '/admin/flag')
+api.add_resource(FlaggedCampaignsAPI, '/flagged-campaigns')
+api.add_resource(AdminFlaggedUsersAPI, '/admin/flagged-campaigns')
+api.add_resource(AdminResolveFlagResource, '/admin/resolve-flag/<int:flag_id>')
+api.add_resource(AdminDeleteFlaggedResource, '/admin/delete-flagged/<int:flag_id>')
+#api.add_resource(CampaignList, '/campaigns') # 
+
+
+#sponsor and some common api endpoints
+
+api.add_resource(GetAllInfluencersResource, '/sponsor/influencers')
+api.add_resource(SearchInfluencersAPI, '/sponsor/search-influencers')
+api.add_resource(CreateCampaignAPI, '/sponsor/create-campaign')
+api.add_resource(ViewCampaignsAPI, '/sponsor/view-campaign')
+api.add_resource(UpdateCampaignAPI, '/sponsor/update-campaign/<int:campaign_id>')
+api.add_resource(DeleteCampaignAPI, '/sponsor/delete-campaign/<int:campaign_id>')
+api.add_resource(CreateAdRequestAPI, '/sponsor/create-adrequest')
+api.add_resource(ViewAdRequestAPI, '/sponsor/view-adrequest')
+api.add_resource(UpdateAdRequestAPI, '/sponsor/update-adrequest/<int:adrequest_id>')
+api.add_resource(DeleteAdRequestAPI, '/sponsor/delete-adrequest/<int:adrequest_id>')
+api.add_resource(CampaignStatisticsAPI, '/sponsor/campaign-statistics/<int:campaign_id>')
+api.add_resource(SponsorRespondNegotiationAPI, '/sponsor/respond-negotiation/<int:adrequest_id>')
+
+#influencer api endpoints
+
+api.add_resource(PublicCampaignSearchAPI, '/influencer/search-campaigns')
+api.add_resource(InfluencerAdRequestsAPI, '/influencer/ad-requests')
+api.add_resource(InfluencerRespondAdRequestAPI, '/influencer/respond-adrequest/<int:adrequest_id>')
+api.add_resource(InfluencerCreateAdRequestAPI, '/influencer/create-adrequest/<int:campaign_id>')
+
+
+
 
 
 if __name__ == '__main__':

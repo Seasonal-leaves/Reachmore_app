@@ -30,7 +30,7 @@ class User(db.Model, UserMixin):
     campaigns = db.relationship('Campaign', backref='sponsor', lazy=True)
     ad_requests = db.relationship('AdRequest', backref='influencer', lazy=True)
    # Relationships with AdHistory
-    sponsored_histories = db.relationship(
+    '''sponsored_histories = db.relationship(
         'AdHistory',
         foreign_keys='AdHistory.sponsor_id',
         back_populates='sponsor',  # Reflects the relationship in AdHistory
@@ -41,7 +41,7 @@ class User(db.Model, UserMixin):
         foreign_keys='AdHistory.influencer_id',
         back_populates='influencer',  # Reflects the relationship in AdHistory
         lazy=True
-    )
+    )'''
     # Below Fields are required for Flask-Security token based authentication
     fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False)
     fs_token_uniquifier = db.Column(db.String(255),unique=True)
@@ -49,7 +49,9 @@ class User(db.Model, UserMixin):
 
 
     def __repr__(self):
-        return f"<User {self.username}, Role: {self.role}>"
+        roles = [role.name for role in self.roles]
+        return f"<User {self.username}, Roles: {roles}>"
+
 
 class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -57,7 +59,7 @@ class Role(db.Model, RoleMixin):
 
 class UserRoles(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.username'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'),nullable=False)
 
 
@@ -75,7 +77,7 @@ class Campaign(db.Model):
     
     # Relationships
     ad_requests = db.relationship('AdRequest', backref='campaign', lazy=True)
-    ad_history = db.relationship('AdHistory', backref='campaign', lazy=True)
+    #ad_history = db.relationship('AdHistory', backref='campaign', lazy=True)
 
     def __repr__(self):
         return f"<Campaign {self.name}, Sponsor ID: {self.sponsor_id}>"
@@ -93,7 +95,19 @@ class AdRequest(db.Model):
     def __repr__(self):
         return f"<AdRequest ID: {self.id}, Status: {self.status}>"
 
+class Flag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    flagged_user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=True)  # User being flagged
+    flagged_campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=True)  # Campaign being flagged
+    reason = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='Pending') # only 2 cases "Pending"/"Resolved"
+    timestamp = db.Column(db.DateTime, default=db.func.now())
 
+    def validate_status(self):
+        if self.status not in ['Pending', 'Resolved']:
+            raise ValueError("Invalid status. Allowed values are 'Pending' and 'Resolved'.")
+
+'''
 class AdHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ad_request_id = db.Column(db.Integer, db.ForeignKey('ad_request.id'), nullable=False)
@@ -117,3 +131,4 @@ class AdHistory(db.Model):
 
     def __repr__(self):
         return f"<AdHistory ID: {self.id}, Completed on: {self.completion_date}>"
+'''
