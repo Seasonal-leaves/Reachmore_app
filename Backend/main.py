@@ -5,6 +5,7 @@ from applications.models import *
 from flask_restful import Api
 from flask_security import Security, hash_password
 from applications.user_datastore import user_datastore
+from flask_cors import CORS
 
 
 def create_app():
@@ -36,6 +37,7 @@ def create_app():
     return app,api
 
 app, api = create_app()
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 from applications.user_api import *
 
