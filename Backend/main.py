@@ -42,10 +42,11 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 from applications.user_api import *
 
 api.add_resource(UserRegistration, '/register')
+api.add_resource(CheckEmailAPI, '/check-email')
 api.add_resource(UserLogin, '/login')
 api.add_resource(UpdateUserDetails, '/user/update-profile')
 api.add_resource(UserLogout, '/logout')
-
+ 
 from applications.crud_api import *
 
 

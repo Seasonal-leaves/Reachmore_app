@@ -99,6 +99,30 @@ class UserRegistration(Resource):
             }
             return make_response(jsonify(response), 500)
 
+
+
+from flask_restful import Resource
+from flask import request, jsonify
+from applications.user_datastore import user_datastore
+
+class CheckEmailAPI(Resource):
+    def get(self):
+        try:
+            email = request.args.get('email')
+            if not email:
+                return {'message': 'Email parameter is required'}, 400
+
+            user = user_datastore.find_user(email=email)
+            if user:
+                return {'message': 'Email already exists'}, 400
+            return {'message': 'Email is available'}, 200
+        except Exception as e:
+            # Log the exception for debugging
+            print(f"Error in /check-email: {e}")
+            return {'message': 'Internal server error', 'error': str(e)}, 500
+
+
+
 class UserLogin(Resource):
     def post(self):
         login_data = request.get_json()
