@@ -14,7 +14,21 @@ const routes = [
     name: 'UpdateProfile',
     component: () => import('@/views/UpdateProfile.vue'),
     meta: { requiresAuth: true },
-  },// Add other routes here
+  },
+  {
+    path: "/admin/pending-approvals",
+    name: "PendingApprovals",
+    component: () => import('@/views/PendingApprovals.vue'),
+    meta: { requiresAuth: true, role: "admin" },
+  },
+  {
+    path: "/sponsor/create-campaign",
+    name: "CreateCampaign",
+    component: () => import("@/views/CreateCampaign.vue"),
+    meta: { requiresAuth: true, role: "sponsor" },
+  }
+  
+  // Add other routes here
 ];
 
 const router = createRouter({

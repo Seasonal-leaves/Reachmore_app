@@ -75,12 +75,16 @@ function logout() {
 
           <!-- Admin Links -->
           <template v-if="isAdmin">
+            
             <li class="nav-item">
               <RouterLink to="/admin/dashboard" class="nav-link">Admin Dashboard</RouterLink>
             </li>
             <li class="nav-item">
               <RouterLink to="/admin/flags" class="nav-link">Manage Flags</RouterLink>
             </li>
+            <li class="nav-item">
+  <RouterLink to="/admin/pending-approvals" class="nav-link">Pending Approvals</RouterLink>
+</li>
           </template>
 
           <!-- Sponsor Links -->

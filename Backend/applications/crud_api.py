@@ -305,12 +305,12 @@ class FlaggedCampaignsAPI(Resource):
     def get(self):
         try:
             # Get the role of the logged-in user
-            role = [role.name for role in request.user.roles][0]
+            role = [role.name for role in current_user.roles][0]
 
             # Sponsor: Fetch only flagged campaigns created by the sponsor
             if role == 'sponsor':
                 flagged_campaigns = Campaign.query.filter(
-                    (Campaign.sponsor_id == request.user.user_id) &
+                    (Campaign.sponsor_id == current_user.user_id) &
                     (Campaign.id.in_(
                         db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
                     ))
@@ -581,12 +581,12 @@ class CreateCampaignAPI(Resource):
         try:
             campaign_data = request.get_json()
             name = campaign_data.get('name')
-            description = campaign_data.get('description')
+            description = campaign_data.get('description','')
             start_date = campaign_data.get('start_date')
             end_date = campaign_data.get('end_date')
             budget = campaign_data.get('budget')
             visibility = campaign_data.get('visibility', 'public')
-            goals = campaign_data.get('goals')
+            goals = campaign_data.get('goals','')
 
             # Validate data
             if not name or not start_date or not budget:
@@ -595,12 +595,20 @@ class CreateCampaignAPI(Resource):
                 return make_response(jsonify({'message': 'Visibility must be either "public" or "private"'}), 400)
             
             # Parse dates
-            start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
-            end_date = datetime.strptime(end_date, "%Y-%m-%d").date() if end_date else None
+            try:
+                start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+            except ValueError:
+                return make_response(jsonify({'message': 'Invalid start_date format. Use YYYY-MM-DD'}), 400)
+
+            try:
+                end_date = datetime.strptime(end_date, "%Y-%m-%d").date() if end_date else None
+            except ValueError:
+                return make_response(jsonify({'message': 'Invalid end_date format. Use YYYY-MM-DD'}), 400)
+
 
             # Create Campaign
             campaign = Campaign(
-                sponsor_id=request.user.user_id,
+                sponsor_id=current_user.user_id,
                 name=name,
                 description=description,
                 start_date=start_date,
@@ -622,7 +630,7 @@ class UpdateCampaignAPI(Resource):
     def put(self, campaign_id):
         try:
             # Fetch the campaign
-            campaign = Campaign.query.filter_by(id=campaign_id, sponsor_id=request.user.user_id).first()
+            campaign = Campaign.query.filter_by(id=campaign_id, sponsor_id=current_user.user_id).first()
             if not campaign:
                 return make_response(jsonify({'message': 'Campaign not found or you are not authorized to update this campaign'}), 403)
 
@@ -652,12 +660,12 @@ class ViewCampaignsAPI(Resource):
     def get(self):
         try:
             # Get the role of the logged-in user
-            role = [role.name for role in request.user.roles][0]
+            role = [role.name for role in current_user.roles][0]
 
             # Sponsor: Fetch non-flagged campaigns created by the sponsor
             if role == 'sponsor':
                 campaigns = Campaign.query.filter(
-                    (Campaign.sponsor_id == request.user.user_id) &
+                    (Campaign.sponsor_id == current_user.user_id) &
                     (Campaign.id.notin_(
                         db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
                     ))
@@ -707,7 +715,7 @@ class DeleteCampaignAPI(Resource):
     def delete(self, campaign_id):
         try:
             # Fetch the campaign
-            campaign = Campaign.query.filter_by(id=campaign_id, sponsor_id=request.user.user_id).first()
+            campaign = Campaign.query.filter_by(id=campaign_id, sponsor_id=current_user.user_id).first()
             if not campaign:
                 return make_response(jsonify({'message': 'Campaign not found or you are not authorized to delete this campaign'}), 403)
 
@@ -745,7 +753,7 @@ class CreateAdRequestAPI(Resource):
                 return make_response(jsonify({'message': 'Payment amount must be a positive number'}), 400)
 
             # Validate campaign ownership
-            campaign = Campaign.query.filter_by(id=campaign_id, sponsor_id=request.user.user_id).first()
+            campaign = Campaign.query.filter_by(id=campaign_id, sponsor_id=current_user.user_id).first()
             if not campaign:
                 return make_response(jsonify({'message': 'You can only create ad requests for your campaigns'}), 403)
 
@@ -780,7 +788,7 @@ class ViewAdRequestAPI(Resource):
     def get(self):
         try:
             # Get the role of the logged-in user
-            user = request.user
+            user = current_user
             role_names = [role.name for role in user.roles]
 
             # Parse query parameters
@@ -838,7 +846,7 @@ class UpdateAdRequestAPI(Resource):
             # Fetch the ad request
             ad_request = AdRequest.query.join(Campaign).filter(
                 AdRequest.id == ad_request_id,
-                Campaign.sponsor_id == request.user.user_id
+                Campaign.sponsor_id == current_user.user_id
             ).first()
             if not ad_request:
                 return make_response(jsonify({'message': 'Ad request not found or you are not authorized to update this ad request'}), 403)
@@ -866,7 +874,7 @@ class DeleteAdRequestAPI(Resource):
             # Fetch the ad request
             ad_request = AdRequest.query.join(Campaign).filter(
                 AdRequest.id == ad_request_id,
-                Campaign.sponsor_id == request.user.user_id
+                Campaign.sponsor_id == current_user.user_id
             ).first()
             if not ad_request:
                 return make_response(jsonify({'message': 'Ad request not found or you are not authorized to delete this ad request'}), 403)
@@ -888,7 +896,7 @@ class CampaignStatisticsAPI(Resource):
     def get(self, campaign_id):
         try:
             # Verify campaign ownership
-            campaign = Campaign.query.filter_by(id=campaign_id, sponsor_id=request.user.user_id).first()
+            campaign = Campaign.query.filter_by(id=campaign_id, sponsor_id=current_user.user_id).first()
             if not campaign:
                 return make_response(jsonify({'message': 'Campaign not found or unauthorized access'}), 403)
 
@@ -934,7 +942,7 @@ class SponsorRespondNegotiationAPI(Resource):
         try:
             # Fetch the ad request
             ad_request = AdRequest.query.filter_by(id=adrequest_id).join(Campaign).filter(
-                Campaign.sponsor_id == request.user.user_id
+                Campaign.sponsor_id == current_user.user_id
             ).first()
             if not ad_request:
                 return make_response(jsonify({'message': 'Ad request not found or unauthorized access'}), 403)
@@ -1031,7 +1039,7 @@ class InfluencerAdRequestsAPI(Resource):
         try:
             # Fetch ad requests for the logged-in influencer, excluding those from flagged campaigns
             ad_requests = AdRequest.query.filter(
-                AdRequest.influencer_id == request.user.user_id,
+                AdRequest.influencer_id == current_user.user_id,
                 AdRequest.campaign_id.notin_(
                     db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
                 )
@@ -1065,7 +1073,7 @@ class InfluencerRespondAdRequestAPI(Resource):
     def put(self, adrequest_id):
         try:
             # Fetch the ad request
-            ad_request = AdRequest.query.filter_by(id=adrequest_id, influencer_id=request.user.user_id).first()
+            ad_request = AdRequest.query.filter_by(id=adrequest_id, influencer_id=current_user.user_id).first()
             if not ad_request:
                 return make_response(jsonify({'message': 'Ad request not found or unauthorized access'}), 403)
 
@@ -1128,7 +1136,7 @@ class InfluencerCreateAdRequestAPI(Resource):
             # Create a new ad request
             ad_request = AdRequest(
                 campaign_id=campaign_id,
-                influencer_id=request.user.user_id,
+                influencer_id=current_user.user_id,
                 messages=data.get('message', 'Ad request created by influencer'),
                 requirements=requirements,
                 payment_amount=payment_amount,
