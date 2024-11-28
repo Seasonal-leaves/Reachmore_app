@@ -57,7 +57,7 @@ async function login() {
     try {
         await authStore.login(email.value, password.value, role.value);
         messageStore.setFlashMessage('Login successful!', 'success');
-        router.push('/'); // Redirect to home/dashboard
+        router.push("/view-campaigns"); // Redirect to home/dashboard
     } catch (error) {
         messageStore.setFlashMessage(error.message || 'Login failed.', 'error');
     }

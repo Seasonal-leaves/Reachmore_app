@@ -1,8 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Registration from '../views/Registration.vue';
 import Login from '../views/Login.vue'; // Adjust the path based on your folder structure
-
+import { useAuthStore } from "@/stores/auth_store";
 const routes = [
+  {
+    path: "/",
+    redirect: "/view-campaigns", // Always redirect to ViewCampaigns
+  },  
   { path: '/login', component: Login }, // Add this route
   {
     path: '/register',
@@ -21,6 +25,19 @@ const routes = [
     component: () => import('@/views/PendingApprovals.vue'),
     meta: { requiresAuth: true, role: "admin" },
   },
+  {
+    path: "/view-campaigns",
+    name: "ViewCampaigns",
+    component: () => import('@/views/ViewCampaigns.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/sponsor/edit-campaign/:campaignId',
+    name: 'EditCampaign',
+    component: () => import('@/views/EditCampaign.vue'),
+    meta: { requiresAuth: true, role: "sponsor" },
+  },
+  
   {
     path: "/sponsor/create-campaign",
     name: "CreateCampaign",

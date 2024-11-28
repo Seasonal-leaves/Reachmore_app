@@ -92,9 +92,7 @@ function logout() {
             <li class="nav-item">
               <RouterLink to="/sponsor/create-campaign" class="nav-link">Create Campaign</RouterLink>
             </li>
-            <li class="nav-item">
-              <RouterLink to="/sponsor/view-campaigns" class="nav-link">My Campaigns</RouterLink>
-            </li>
+            
             <li class="nav-item">
               <RouterLink to="/sponsor/search-influencers" class="nav-link">Search Influencers</RouterLink>
             </li>
@@ -113,12 +111,16 @@ function logout() {
           <!-- Logged-in User Links -->
           <template v-if="isAuthenticated">
             <li class="nav-item">
-              <span class="nav-link">Hello, {{ userDetails.username }}</span>
+              <span class="nav-link">Hello {{ userDetails.username }},</span>
             </li>
             <li v-if="isAuthenticated" class="nav-item">
             <RouterLink to="/update-profile" class="nav-link">Profile</RouterLink>
           </li>
-            <li class="nav-item">
+         
+  <li class="nav-item">
+    <RouterLink to="/view-campaigns" class="nav-link">View Campaigns</RouterLink>
+  </li>
+ <li class="nav-item">
               <button @click="logout" class="btn btn-link nav-link">Logout</button>
             </li>
           </template>

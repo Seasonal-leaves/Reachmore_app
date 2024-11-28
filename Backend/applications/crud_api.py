@@ -624,6 +624,9 @@ class CreateCampaignAPI(Resource):
         except Exception as e:
             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
 
+
+from datetime import datetime
+
 class UpdateCampaignAPI(Resource):
     @auth_token_required
     @roles_required('sponsor')
@@ -637,11 +640,22 @@ class UpdateCampaignAPI(Resource):
             # Get request data
             campaign_data = request.get_json()
 
-            # Update fields
+            # Parse dates if present
+            if 'start_date' in campaign_data:
+                try:
+                    campaign.start_date = datetime.strptime(campaign_data['start_date'], "%Y-%m-%d").date()
+                except ValueError:
+                    return make_response(jsonify({'message': 'Invalid format for start_date. Use yyyy-MM-dd'}), 400)
+            
+            if 'end_date' in campaign_data and campaign_data['end_date']:
+                try:
+                    campaign.end_date = datetime.strptime(campaign_data['end_date'], "%Y-%m-%d").date()
+                except ValueError:
+                    return make_response(jsonify({'message': 'Invalid format for end_date. Use yyyy-MM-dd'}), 400)
+            
+            # Update other fields
             campaign.name = campaign_data.get('name', campaign.name)
             campaign.description = campaign_data.get('description', campaign.description)
-            campaign.start_date = campaign_data.get('start_date', campaign.start_date)
-            campaign.end_date = campaign_data.get('end_date', campaign.end_date)
             campaign.budget = campaign_data.get('budget', campaign.budget)
             campaign.visibility = campaign_data.get('visibility', campaign.visibility)
             campaign.goals = campaign_data.get('goals', campaign.goals)

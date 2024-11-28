@@ -30,7 +30,7 @@ def create_app():
                                        email='ritam_admin@gmail.com',
                                        password=hash_password('ritam_admin'),
                                        is_approved=True,
-                                       roles=[admin_role, sponsor_role])
+                                       roles=[admin_role])
             
         db.session.commit()
     
@@ -51,8 +51,8 @@ from applications.crud_api import *
 
 
 # admin api endpoints
-api.add_resource(AdminApproveSponsor, '/admin/approve-sponsor/<int:sponsor_id>')
-api.add_resource(PendingApprovals, '/admin/pending-approvals')
+api.add_resource(AdminApproveSponsor, '/admin/approve-sponsor/<int:sponsor_id>') #working properly
+api.add_resource(PendingApprovals, '/admin/pending-approvals')                   #working properly
 api.add_resource(AdminUserManagement, '/admin/user-management')
 api.add_resource(AdminStatisticsResource, '/admin/statistics')
 api.add_resource(AdminFlagResource, '/admin/flag')
@@ -67,9 +67,10 @@ api.add_resource(AdminDeleteFlaggedResource, '/admin/delete-flagged/<int:flag_id
 
 api.add_resource(GetAllInfluencersResource, '/sponsor/influencers')
 api.add_resource(SearchInfluencersAPI, '/sponsor/search-influencers')
-api.add_resource(CreateCampaignAPI, '/sponsor/create-campaign')
-api.add_resource(ViewCampaignsAPI, '/sponsor/view-campaign')
-api.add_resource(UpdateCampaignAPI, '/sponsor/update-campaign/<int:campaign_id>')
+api.add_resource(CreateCampaignAPI, '/sponsor/create-campaign')                     #working properly
+api.add_resource(ViewCampaignsAPI, '/view-campaign')                                #working properly
+
+api.add_resource(UpdateCampaignAPI, '/sponsor/update-campaign/<int:campaign_id>')   #working properly
 api.add_resource(DeleteCampaignAPI, '/sponsor/delete-campaign/<int:campaign_id>')
 api.add_resource(CreateAdRequestAPI, '/sponsor/create-adrequest')
 api.add_resource(ViewAdRequestAPI, '/sponsor/view-adrequest')
