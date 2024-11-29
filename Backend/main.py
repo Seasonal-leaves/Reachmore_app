@@ -65,14 +65,14 @@ api.add_resource(AdminDeleteFlaggedResource, '/admin/delete-flagged/<int:flag_id
 
 #sponsor and some common api endpoints
 
-api.add_resource(GetAllInfluencersResource, '/sponsor/influencers')
+api.add_resource(GetAllInfluencersResource, '/sponsor/influencers')                 #working properly
 api.add_resource(SearchInfluencersAPI, '/sponsor/search-influencers')
 api.add_resource(CreateCampaignAPI, '/sponsor/create-campaign')                     #working properly
 api.add_resource(ViewCampaignsAPI, '/view-campaign')                                #working properly
 
 api.add_resource(UpdateCampaignAPI, '/sponsor/update-campaign/<int:campaign_id>')   #working properly
 api.add_resource(DeleteCampaignAPI, '/sponsor/delete-campaign/<int:campaign_id>')   #working properly
-api.add_resource(CreateAdRequestAPI, '/sponsor/create-adrequest')
+api.add_resource(CreateAdRequestAPI, '/sponsor/create-adrequest')                   #working properly
 api.add_resource(ViewAdRequestAPI, '/sponsor/view-adrequest')
 api.add_resource(UpdateAdRequestAPI, '/sponsor/update-adrequest/<int:adrequest_id>')
 api.add_resource(DeleteAdRequestAPI, '/sponsor/delete-adrequest/<int:adrequest_id>')

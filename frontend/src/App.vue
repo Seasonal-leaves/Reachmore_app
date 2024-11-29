@@ -92,7 +92,10 @@ function logout() {
             <li class="nav-item">
               <RouterLink to="/sponsor/create-campaign" class="nav-link">Create Campaign</RouterLink>
             </li>
-            
+            <li class="nav-item">
+  <router-link to="/sponsor/influencers" class="nav-link">View Influencers</router-link>
+</li>
+
             <li class="nav-item">
               <RouterLink to="/sponsor/search-influencers" class="nav-link">Search Influencers</RouterLink>
             </li>

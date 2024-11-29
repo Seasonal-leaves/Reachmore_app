@@ -502,6 +502,8 @@ class GetAllInfluencersResource(Resource):
                 {
                     'user_id': influencer.user_id,
                     'username': influencer.username,
+                    'email':influencer.email,
+                    'category':influencer.category,
                     'niche': influencer.niche,
                     'reach': influencer.reach,
                 }
@@ -625,7 +627,6 @@ class CreateCampaignAPI(Resource):
             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
 
 
-from datetime import datetime
 
 class UpdateCampaignAPI(Resource):
     @auth_token_required

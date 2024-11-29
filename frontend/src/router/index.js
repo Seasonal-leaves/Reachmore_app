@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Registration from '../views/Registration.vue';
 import Login from '../views/Login.vue'; // Adjust the path based on your folder structure
 import { useAuthStore } from "@/stores/auth_store";
+import ViewInfluencers from "@/views/ViewInfluencers.vue";
+
 const routes = [
   {
     path: "/",
@@ -37,7 +39,12 @@ const routes = [
     component: () => import('@/views/EditCampaign.vue'),
     meta: { requiresAuth: true, role: "sponsor" },
   },
-  
+  {
+    path: "/sponsor/influencers",
+    name: "ViewInfluencers",
+    component: ViewInfluencers,
+    meta: { requiresAuth: true },
+  },
   {
     path: "/sponsor/create-campaign",
     name: "CreateCampaign",
