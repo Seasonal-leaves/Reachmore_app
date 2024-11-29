@@ -418,6 +418,8 @@ class AdminDeleteFlaggedResource(Resource):
                 user = User.query.get(flag.flagged_user_id)
                 if not user:
                     return make_response(jsonify({'message': 'Flagged user not found'}), 404)
+                # Delete associated AdRequests
+                AdRequest.query.filter_by(influencer_id=user.id).delete() 
                 db.session.delete(user)
 
             # Check if the flagged entity is a campaign
@@ -425,6 +427,8 @@ class AdminDeleteFlaggedResource(Resource):
                 campaign = Campaign.query.get(flag.flagged_campaign_id)
                 if not campaign:
                     return make_response(jsonify({'message': 'Flagged campaign not found'}), 404)
+                # Delete associated AdRequests
+                AdRequest.query.filter_by(campaign_id=campaign.id).delete()
                 db.session.delete(campaign)
 
             # Delete the flag entry
@@ -1046,29 +1050,35 @@ class PublicCampaignSearchAPI(Resource):
         except Exception as e:
             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
 
-
 class InfluencerAdRequestsAPI(Resource):
     @auth_token_required
     @roles_required('influencer')
     def get(self):
         try:
-            # Fetch ad requests for the logged-in influencer, excluding those from flagged campaigns
+            # Fetch ad requests for the logged-in influencer, excluding flagged campaigns
             ad_requests = AdRequest.query.filter(
                 AdRequest.influencer_id == current_user.user_id,
                 AdRequest.campaign_id.notin_(
                     db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
                 )
+            ).join(Campaign).add_columns(
+                Campaign.name.label('campaign_name'),
+                Campaign.description.label('campaign_description'),
+                Campaign.start_date,
+                Campaign.budget
             ).all()
 
             # Format response
             ad_request_data = [
                 {
-                    'ad_request_id': ad_request.id,
-                    'campaign_id': ad_request.campaign_id,
-                    'messages': ad_request.messages,
-                    'requirements': ad_request.requirements,
-                    'payment_amount': ad_request.payment_amount,
-                    'status': ad_request.status
+                    'ad_request_id': ad_request.AdRequest.id,
+                    'campaign_id': ad_request.AdRequest.campaign_id,
+                    'campaign_name': ad_request.campaign_name,
+                    'campaign_description': ad_request.campaign_description,
+                    'messages': ad_request.AdRequest.messages,
+                    'requirements': ad_request.AdRequest.requirements,
+                    'payment_amount': ad_request.AdRequest.payment_amount,
+                    'status': ad_request.AdRequest.status
                 }
                 for ad_request in ad_requests
             ]
@@ -1080,7 +1090,6 @@ class InfluencerAdRequestsAPI(Resource):
 
         except Exception as e:
             return make_response(jsonify({'message': 'Internal server error', 'error': str(e)}), 500)
-
 
 class InfluencerRespondAdRequestAPI(Resource):
     @auth_token_required

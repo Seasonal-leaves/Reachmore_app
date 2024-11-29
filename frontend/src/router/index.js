@@ -46,6 +46,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: "/influencer/ad-requests",
+    name: "AdRequests",
+    component: () => import("@/views/InfluencerAdRequests.vue"),
+  },
+  
+  {
     path: "/sponsor/create-campaign",
     name: "CreateCampaign",
     component: () => import("@/views/CreateCampaign.vue"),

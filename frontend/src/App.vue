@@ -106,9 +106,12 @@ function logout() {
             <li class="nav-item">
               <RouterLink to="/influencer/search-campaigns" class="nav-link">Search Campaigns</RouterLink>
             </li>
-            <li class="nav-item">
-              <RouterLink to="/influencer/ad-requests" class="nav-link">My Ad Requests</RouterLink>
-            </li>
+            <router-link
+  to="/influencer/ad-requests"
+  class="btn btn-outline-primary mx-2"
+>
+  My Ad Requests
+</router-link>
           </template>
 
           <!-- Logged-in User Links -->

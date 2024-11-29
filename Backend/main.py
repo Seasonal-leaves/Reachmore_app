@@ -82,7 +82,7 @@ api.add_resource(SponsorRespondNegotiationAPI, '/sponsor/respond-negotiation/<in
 #influencer api endpoints
 
 api.add_resource(PublicCampaignSearchAPI, '/influencer/search-campaigns')
-api.add_resource(InfluencerAdRequestsAPI, '/influencer/ad-requests')
+api.add_resource(InfluencerAdRequestsAPI, '/influencer/ad-requests')                #working properly
 api.add_resource(InfluencerRespondAdRequestAPI, '/influencer/respond-adrequest/<int:adrequest_id>')
 api.add_resource(InfluencerCreateAdRequestAPI, '/influencer/create-adrequest/<int:campaign_id>')
 

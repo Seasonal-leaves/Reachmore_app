@@ -2,6 +2,7 @@
     <div class="container mt-5">
       <h1 class="text-center mb-4">{{ isAuthenticated ? "All Campaigns" : "Welcome to Reachmore!" }}</h1>
   
+      <!-- Welcome Section for Unauthenticated Users -->
       <div v-if="!isAuthenticated" class="text-center">
         <p class="lead">
           Looking to grow your reach or make your brand the next big thing? Join <strong>Reachmore</strong> today!
@@ -17,6 +18,7 @@
         <router-link to="/login" class="btn btn-outline-secondary mx-2">Log In</router-link>
       </div>
   
+      <!-- Campaign List -->
       <div v-else>
         <div v-if="campaigns.length === 0" class="text-center">
           <p>No campaigns available.</p>
@@ -34,47 +36,42 @@
                   <p class="card-text">{{ campaign.description }}</p>
                   <p class="card-text"><small class="text-muted">Start Date: {{ campaign.start_date }}</small></p>
                   <p class="card-text"><small class="text-muted">Budget: ₹{{ campaign.budget }}</small></p>
-                      <!-- Sponsor Button -->
-
-                      <button
-        v-if="isSponsor"
-        @click="confirmDelete(campaign.id)"
-        class="btn btn-danger btn-sm position-absolute top-0 end-0"
-        title="Delete Campaign"
-      >
-        🗑️
-      </button>
-
-                      <button
-  v-if="isSponsor"
-  class="btn btn-secondary mt-2"
-  @click="editCampaign(campaign.id)"
->
-  Edit Campaign
-</button>
-                <button
-                  v-if="isSponsor"
-                  @click="createAdRequest(campaign.id)"
-                  class="btn btn-primary"
-                >
-                  Create Ad Request
-                </button>
-                <!-- Influencer Button -->
-                <button
-                  v-if="isInfluencer"
-                  @click="makeAdRequest(campaign.id)"
-                  class="btn btn-outline-success"
-                >
-                  Make Ad Request
-                </button>
+  
+                  <!-- Edit Campaign Button -->
+                  <button
+                    v-if="isSponsor"
+                    class="btn btn-secondary mt-2"
+                    @click="editCampaign(campaign.id)"
+                  >
+                    Edit Campaign
+                  </button>
+  
+                  <!-- Delete Campaign Button -->
+                  <button
+                    v-if="isSponsor"
+                    @click="confirmDelete(campaign.id)"
+                    class="btn btn-danger btn-sm position-absolute top-0 end-0"
+                    title="Delete Campaign"
+                  >
+                    🗑️
+                  </button>
+  
+                  <!-- Create Ad Request Button -->
+                  <button
+                    v-if="isSponsor"
+                    @click="openAdRequestModal(campaign.id)"
+                    class="btn btn-primary"
+                  >
+                    Create Ad Request
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <div v-if="showDeleteModal" class="modal-backdrop">
+  
+      <div v-if="showDeleteModal" class="modal-backdrop">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -92,30 +89,117 @@
   </div>
 </div>
 
-
+      <!-- AdRequest Modal -->
+      <div
+        class="modal fade"
+        id="adRequestModal"
+        tabindex="-1"
+        aria-labelledby="adRequestModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="adRequestModalLabel">Create Ad Request</h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <!-- Search Bar -->
+              <input
+                type="text"
+                v-model="searchQuery"
+                class="form-control mb-3"
+                placeholder="Search influencers by name..."
+              />
+  
+              <!-- Influencer Dropdown -->
+              <select
+                v-model="selectedInfluencerId"
+                class="form-select mb-3"
+              >
+                <option v-for="influencer in filteredInfluencers" :key="influencer.user_id" :value="influencer.user_id">
+                  {{ influencer.username }}
+                </option>
+              </select>
+  
+              <!-- Additional Fields -->
+              <div class="mb-3">
+                <label for="requirements" class="form-label">Requirements</label>
+                <textarea
+                  v-model="adRequestRequirements"
+                  class="form-control"
+                  id="requirements"
+                  placeholder="Enter ad request requirements"
+                ></textarea>
+              </div>
+              <div class="mb-3">
+                <label for="paymentAmount" class="form-label">Payment Amount</label>
+                <input
+                  type="number"
+                  v-model="paymentAmount"
+                  class="form-control"
+                  id="paymentAmount"
+                  placeholder="Enter payment amount"
+                />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                @click="createAdRequest"
+              >
+                Submit Ad Request
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </template>
   
   <script setup>
   import { ref, onMounted, computed } from "vue";
   import { useAuthStore } from "@/stores/auth_store";
   import { useMessageStore } from "@/stores/messageStore";
-  import { useRouter } from 'vue-router';
-
-const router = useRouter();
+  import { useRouter } from "vue-router";
+  
+  const router = useRouter();
   const authStore = useAuthStore();
   const messageStore = useMessageStore();
   
-  // Reactive values
+  const campaigns = ref([]);
+  const influencers = ref([]);
+  const searchQuery = ref("");
+  const selectedInfluencerId = ref(null);
+  const adRequestRequirements = ref("");
+  const paymentAmount = ref(null);
+  const selectedCampaignId = ref(null);
+  const showDeleteModal = ref(false);
+const campaignToDelete = ref(null);
+  
   const isAuthenticated = computed(() => authStore.isAuthenticated);
   const isSponsor = computed(() => authStore.isSponsor());
-  const isInfluencer = computed(() => authStore.isInfluencer());
-  const campaigns = ref([]);
+  const filteredInfluencers = computed(() => {
+    if (!searchQuery.value) return influencers.value;
+    return influencers.value.filter((influencer) =>
+      influencer.username.toLowerCase().includes(searchQuery.value.toLowerCase())
+    );
+  });
   
-// State for delete modal
-const showDeleteModal = ref(false);
-const campaignToDelete = ref(null);
-
-  // Fetch campaigns on mount
+  // Fetch data
   async function fetchCampaigns() {
     try {
       const response = await fetch(`${authStore.getBackendServerURL()}/view-campaign`, {
@@ -124,7 +208,6 @@ const campaignToDelete = ref(null);
           "Authentication-Token": authStore.getAuthToken(),
         },
       });
-  
       const data = await response.json();
       if (response.ok) {
         campaigns.value = data.campaigns;
@@ -136,13 +219,48 @@ const campaignToDelete = ref(null);
       messageStore.setFlashMessage("An error occurred while fetching campaigns.", "error");
     }
   }
-
-  function confirmDelete(campaignId) {
+  
+  async function fetchInfluencers() {
+    try {
+      const response = await fetch(`${authStore.getBackendServerURL()}/sponsor/influencers`, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authentication-Token": authStore.getAuthToken(),
+        },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        influencers.value = data.influencers;
+      } else {
+        messageStore.setFlashMessage(data.message || "Failed to fetch influencers.", "error");
+      }
+    } catch (error) {
+      console.error("Error fetching influencers:", error);
+      messageStore.setFlashMessage("An error occurred while fetching influencers.", "error");
+    }
+  }
+  
+  // Edit Campaign
+  function editCampaign(campaignId) {
+    router.push(`/sponsor/edit-campaign/${campaignId}`);
+  }
+  
+// Confirm delete modal
+function confirmDelete(campaignId) {
   campaignToDelete.value = campaignId;
   showDeleteModal.value = true;
 }
   
+function closeDeleteModal() {
+  campaignToDelete.value = null;
+  showDeleteModal.value = false;
+}
+ 
+  
+// Delete campaign
 async function deleteCampaign() {
+  if (!campaignToDelete.value) return;
+
   try {
     const response = await fetch(
       `${authStore.getBackendServerURL()}/sponsor/delete-campaign/${campaignToDelete.value}`,
@@ -153,11 +271,12 @@ async function deleteCampaign() {
         },
       }
     );
+
     const data = await response.json();
     if (response.ok) {
       messageStore.setFlashMessage(data.message, "success");
-      fetchCampaigns(); // Refresh the campaigns list
       closeDeleteModal();
+      fetchCampaigns(); // Refresh the campaigns after deletion
     } else {
       messageStore.setFlashMessage(data.message || "Failed to delete campaign.", "error");
     }
@@ -167,23 +286,54 @@ async function deleteCampaign() {
   }
 }
 
-function closeDeleteModal() {
-  showDeleteModal.value = false;
-  campaignToDelete.value = null;
-}
-  function createAdRequest(campaignId) {
-    // Add logic to handle creating ad requests
-    console.log("Creating ad request for campaign:", campaignId);
+  
+  
+  // Open AdRequest Modal
+  function openAdRequestModal(campaignId) {
+    selectedCampaignId.value = campaignId;
+    const modal = new bootstrap.Modal(document.getElementById("adRequestModal"));
+    modal.show();
   }
-
-  function editCampaign(campaignId) {
-  router.push(`/sponsor/edit-campaign/${campaignId}`);
-}
+  
+  // Create AdRequest
+  async function createAdRequest() {
+    try {
+      const payload = {
+        campaign_id: selectedCampaignId.value,
+        influencer_id: selectedInfluencerId.value,
+        requirements: adRequestRequirements.value,
+        payment_amount: parseFloat(paymentAmount.value),
+      };
+  
+      const response = await fetch(
+        `${authStore.getBackendServerURL()}/sponsor/create-adrequest`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authentication-Token": authStore.getAuthToken(),
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+  
+      const data = await response.json();
+      if (response.ok) {
+        messageStore.setFlashMessage(data.message, "success");
+        const modal = bootstrap.Modal.getInstance(document.getElementById("adRequestModal"));
+        if (modal) modal.hide();
+      } else {
+        messageStore.setFlashMessage(data.message || "Failed to create AdRequest.", "error");
+      }
+    } catch (error) {
+      console.error("Error creating AdRequest:", error);
+      messageStore.setFlashMessage("An error occurred while creating AdRequest.", "error");
+    }
+  }
   
   onMounted(() => {
-    if (isAuthenticated.value) {
-      fetchCampaigns();
-    }
+    fetchCampaigns();
+    fetchInfluencers();
   });
   </script>
   
@@ -199,29 +349,29 @@ function closeDeleteModal() {
   .btn {
     margin-top: 10px;
   }
+  
   .modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1050;
-}
-
-.modal-dialog {
-  width: 90%;
-  max-width: 500px;
-}
-
-.modal-content {
-  background-color: #fff;
-  border-radius: 5px;
-  padding: 20px;
-}
-
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+  }
+  
+  .modal-dialog {
+    width: 90%;
+    max-width: 500px;
+  }
+  
+  .modal-content {
+    background-color: #fff;
+    border-radius: 5px;
+    padding: 20px;
+  }
   </style>
   
