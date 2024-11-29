@@ -71,7 +71,7 @@ api.add_resource(CreateCampaignAPI, '/sponsor/create-campaign')                 
 api.add_resource(ViewCampaignsAPI, '/view-campaign')                                #working properly
 
 api.add_resource(UpdateCampaignAPI, '/sponsor/update-campaign/<int:campaign_id>')   #working properly
-api.add_resource(DeleteCampaignAPI, '/sponsor/delete-campaign/<int:campaign_id>')
+api.add_resource(DeleteCampaignAPI, '/sponsor/delete-campaign/<int:campaign_id>')   #working properly
 api.add_resource(CreateAdRequestAPI, '/sponsor/create-adrequest')
 api.add_resource(ViewAdRequestAPI, '/sponsor/view-adrequest')
 api.add_resource(UpdateAdRequestAPI, '/sponsor/update-adrequest/<int:adrequest_id>')

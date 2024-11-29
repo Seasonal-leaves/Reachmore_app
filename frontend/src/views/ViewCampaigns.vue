@@ -37,6 +37,15 @@
                       <!-- Sponsor Button -->
 
                       <button
+        v-if="isSponsor"
+        @click="confirmDelete(campaign.id)"
+        class="btn btn-danger btn-sm position-absolute top-0 end-0"
+        title="Delete Campaign"
+      >
+        🗑️
+      </button>
+
+                      <button
   v-if="isSponsor"
   class="btn btn-secondary mt-2"
   @click="editCampaign(campaign.id)"
@@ -65,6 +74,25 @@
         </div>
       </div>
     </div>
+    <div v-if="showDeleteModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Delete</h5>
+        <button type="button" class="btn-close" @click="closeDeleteModal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete this campaign? This action is irreversible.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" @click="deleteCampaign">Confirm Delete</button>
+        <button class="btn btn-secondary" @click="closeDeleteModal">Go Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
   </template>
   
   <script setup>
@@ -83,6 +111,10 @@ const router = useRouter();
   const isInfluencer = computed(() => authStore.isInfluencer());
   const campaigns = ref([]);
   
+// State for delete modal
+const showDeleteModal = ref(false);
+const campaignToDelete = ref(null);
+
   // Fetch campaigns on mount
   async function fetchCampaigns() {
     try {
@@ -104,7 +136,41 @@ const router = useRouter();
       messageStore.setFlashMessage("An error occurred while fetching campaigns.", "error");
     }
   }
+
+  function confirmDelete(campaignId) {
+  campaignToDelete.value = campaignId;
+  showDeleteModal.value = true;
+}
   
+async function deleteCampaign() {
+  try {
+    const response = await fetch(
+      `${authStore.getBackendServerURL()}/sponsor/delete-campaign/${campaignToDelete.value}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Authentication-Token": authStore.getAuthToken(),
+        },
+      }
+    );
+    const data = await response.json();
+    if (response.ok) {
+      messageStore.setFlashMessage(data.message, "success");
+      fetchCampaigns(); // Refresh the campaigns list
+      closeDeleteModal();
+    } else {
+      messageStore.setFlashMessage(data.message || "Failed to delete campaign.", "error");
+    }
+  } catch (error) {
+    console.error("Error deleting campaign:", error);
+    messageStore.setFlashMessage("An error occurred while deleting the campaign.", "error");
+  }
+}
+
+function closeDeleteModal() {
+  showDeleteModal.value = false;
+  campaignToDelete.value = null;
+}
   function createAdRequest(campaignId) {
     // Add logic to handle creating ad requests
     console.log("Creating ad request for campaign:", campaignId);
@@ -133,5 +199,29 @@ const router = useRouter();
   .btn {
     margin-top: 10px;
   }
+  .modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+}
+
+.modal-dialog {
+  width: 90%;
+  max-width: 500px;
+}
+
+.modal-content {
+  background-color: #fff;
+  border-radius: 5px;
+  padding: 20px;
+}
+
   </style>
   
