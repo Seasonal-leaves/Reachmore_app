@@ -1147,6 +1147,14 @@ class InfluencerCreateAdRequestAPI(Resource):
                     db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
                 )
             ).first()
+            # Check if an ad request already exists for this campaign and influencer
+            existing_ad_request = AdRequest.query.filter_by(
+                campaign_id=campaign_id,
+                influencer_id=current_user.user_id
+            ).first()
+
+            if existing_ad_request:
+                return make_response(jsonify({'message': 'An ad request for this campaign already exists'}), 400)
 
             if not campaign:
                 return make_response(jsonify({'message': 'Campaign not found or it is flagged'}), 404)

@@ -399,6 +399,11 @@ async function deleteCampaign() {
 function openInfluencerAdRequestModal(campaignId) {
   selectedCampaignIdForInfluencer.value = campaignId;
   showInfluencerAdRequestModal.value = true;
+}// Close Influencer Ad Request Modal
+function closeInfluencerAdRequestModal() {
+  showInfluencerAdRequestModal.value = false;
+  influencerAdRequestRequirements.value = "";
+  influencerPaymentAmount.value = null;
 }
 
 // Submit Influencer Ad Request
