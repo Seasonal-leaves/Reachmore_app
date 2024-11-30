@@ -100,6 +100,13 @@
                   >
                     Create Ad Request
                   </button>
+                  <button
+  class="btn btn-danger btn-sm"
+  @click="openFlagModal(null, campaign.id)" 
+  v-if="isAdmin"
+>
+  Flag Campaign
+</button>
                 </div>
               </div>
             </div>
@@ -249,7 +256,35 @@
     </div>
   </div>
 </div>
-     
+   <!-- Flag Modal -->
+<div v-if="showFlagModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Flag {{ flaggedUserId ? 'User' : 'Campaign' }}</h5>
+    
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="reason" class="form-label">Reason for Flagging</label>
+          <textarea
+            id="reason"
+            v-model="flagReason"
+            class="form-control"
+            placeholder="Enter the reason for flagging"
+            rows="3"
+            required
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" @click="closeFlagModal">Cancel</button>
+        <button class="btn btn-danger" @click="submitFlag">Flag</button>
+      </div>
+    </div>
+  </div>
+</div>
+  
 
   </template>
   
@@ -277,10 +312,17 @@ const influencerPaymentAmount = ref(null);
   const selectedCampaignId = ref(null);
   const showDeleteModal = ref(false);
 const campaignToDelete = ref(null);
-  
+
+const showFlagModal = ref(false);
+const flagReason = ref("");
+const flaggedUserId = ref(null);
+const flaggedCampaignId = ref(null);  
+
+
   const isAuthenticated = computed(() => authStore.isAuthenticated);
   const isSponsor = computed(() => authStore.isSponsor());
   const isInfluencer = computed(() => authStore.isInfluencer());
+  const isAdmin = computed(() => authStore.isAdmin());
   const filteredInfluencers = computed(() => {
     if (!searchQuery.value) return influencers.value;
     return influencers.value.filter((influencer) =>
@@ -404,7 +446,57 @@ async function deleteCampaign() {
     messageStore.setFlashMessage("An error occurred while deleting the campaign.", "error");
   }
 }
+// Open the flag modal
+function openFlagModal(userId, campaignId) {
+//   flaggedUserId.value = userId;
+  flaggedCampaignId.value = campaignId;
+  flagReason.value = "";
+  showFlagModal.value = true;
+}
 
+// Close the flag modal
+function closeFlagModal() {
+//   flaggedUserId.value = null;
+  flaggedCampaignId.value = null;
+  flagReason.value = "";
+  showFlagModal.value = false;
+}
+
+// Submit the flag
+async function submitFlag() {
+  if (!flagReason.value.trim()) {
+    messageStore.setFlashMessage("Reason is required to flag.", "error");
+    return;
+  }
+
+  const payload = {
+    // flagged_user_id: flaggedUserId.value,
+    flagged_campaign_id: flaggedCampaignId.value,
+    reason: flagReason.value.trim(),
+  };
+
+  try {
+    const response = await fetch(`${authStore.getBackendServerURL()}/admin/flag`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authentication-Token": authStore.getAuthToken(),
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      messageStore.setFlashMessage(data.message, "success");
+      closeFlagModal();
+    } else {
+      messageStore.setFlashMessage(data.message || "Failed to flag the entity.", "error");
+    }
+  } catch (error) {
+    console.error("Error flagging entity:", error);
+    messageStore.setFlashMessage("An error occurred while flagging.", "error");
+  }
+}
   
   
   // Open AdRequest Modal

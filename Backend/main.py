@@ -53,9 +53,9 @@ from applications.crud_api import *
 # admin api endpoints
 api.add_resource(AdminApproveSponsor, '/admin/approve-sponsor/<int:sponsor_id>') #working properly
 api.add_resource(PendingApprovals, '/admin/pending-approvals')                   #working properly
-api.add_resource(AdminUserManagement, '/admin/user-management')
+api.add_resource(AdminUserManagement, '/admin/user-management')                  #working properly
 api.add_resource(AdminStatisticsResource, '/admin/statistics')
-api.add_resource(AdminFlagResource, '/admin/flag')
+api.add_resource(AdminFlagResource, '/admin/flag')                              #working properly    
 api.add_resource(FlaggedCampaignsAPI, '/flagged-campaigns')
 api.add_resource(AdminFlaggedUsersAPI, '/admin/flagged-campaigns')
 api.add_resource(AdminResolveFlagResource, '/admin/resolve-flag/<int:flag_id>')
@@ -77,7 +77,7 @@ api.add_resource(ViewAdRequestAPI, '/sponsor/view-adrequest')                   
 api.add_resource(UpdateAdRequestAPI, '/sponsor/update-adrequest/<int:adrequest_id>')#working properly
 api.add_resource(DeleteAdRequestAPI, '/sponsor/delete-adrequest/<int:adrequest_id>')#woring properly
 api.add_resource(CampaignStatisticsAPI, '/sponsor/campaign-statistics/<int:campaign_id>')
-api.add_resource(SponsorRespondNegotiationAPI, '/sponsor/respond-negotiation/<int:adrequest_id>')
+api.add_resource(SponsorRespondNegotiationAPI, '/sponsor/respond-negotiation/<int:adrequest_id>')#woring properly
 
 #influencer api endpoints
 

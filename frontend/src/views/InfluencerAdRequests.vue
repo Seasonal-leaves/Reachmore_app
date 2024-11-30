@@ -20,7 +20,7 @@
               <p class="card-text"><strong>Status:</strong> {{ adRequest.status }}</p>
   
               <!-- Action Buttons -->
-              <div v-if="adRequest.status === 'Pending'" class="d-flex gap-2">
+              <div v-if="adRequest.status === 'Pending' || adRequest.status === 'Negotiated'" class="d-flex gap-2">
                 <button class="btn btn-success" @click="respondToAdRequest(adRequest.ad_request_id, 'Accepted')">
                   Accept
                 </button>

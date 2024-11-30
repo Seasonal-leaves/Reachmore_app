@@ -102,6 +102,9 @@ class Flag(db.Model):
     reason = db.Column(db.String(255), nullable=False)
     status = db.Column(db.String(20), nullable=False, default='Pending') # only 2 cases "Pending"/"Resolved"
     timestamp = db.Column(db.DateTime, default=db.func.now())
+    flagged_user = db.relationship('User', backref='flags', lazy=True, foreign_keys=[flagged_user_id])
+    flagged_campaign = db.relationship('Campaign', backref='flags', lazy=True, foreign_keys=[flagged_campaign_id])
+
 
     def validate_status(self):
         if self.status not in ['Pending', 'Resolved']:

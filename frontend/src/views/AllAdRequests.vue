@@ -24,7 +24,7 @@
   </button>
     <!-- Delete Button at Top Right -->
     <button
-        v-if="adRequest.status === 'Pending' || adRequest.status === 'Negotiated'"
+        v-if="adRequest.status === 'Pending' || adRequest.status === 'Negotiated'|| adRequest.status === 'Rejected'"
         @click="confirmDeleteAdRequest(adRequest.id)"
         class="btn btn-danger btn-sm position-absolute top-0 end-0"
         title="Delete Ad Request"
@@ -34,6 +34,27 @@
   <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
 </svg>
     
+    </button>
+    <button
+      v-if="adRequest.status === 'Negotiated'"
+      class="btn btn-success me-2"
+      @click="respondToAdRequest(adRequest.id, 'Accepted')"
+    >
+      Accept
+    </button>
+    <button
+      v-if="adRequest.status === 'Negotiated'"
+      class="btn btn-danger me-2"
+      @click="respondToAdRequest(adRequest.id, 'Rejected')"
+    >
+      Reject
+    </button>
+    <button
+      v-if="adRequest.status === 'Negotiated'"
+      class="btn btn-warning"
+      @click="openNegotiateModal(adRequest)"
+    >
+      Negotiate
     </button>
 </div>
             </div>
@@ -94,6 +115,42 @@
     </div>
   </div>
 </div>
+<!-- Negotiation modal -->
+<div v-if="showNegotiateModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Negotiate Ad Request</h5>
+        <button type="button" class="btn-close" @click="closeNegotiateModal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="negotiationMessage" class="form-label">Message</label>
+          <textarea
+            v-model="negotiationMessage"
+            class="form-control"
+            id="negotiationMessage"
+            placeholder="Enter negotiation message"
+          ></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="negotiationAmount" class="form-label">Payment Amount</label>
+          <input
+            type="number"
+            v-model="negotiationAmount"
+            class="form-control"
+            id="negotiationAmount"
+            placeholder="Enter new payment amount"
+          />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" @click="closeNegotiateModal">Close</button>
+        <button class="btn btn-primary" @click="submitNegotiation">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
   </template>
@@ -113,6 +170,9 @@
 const selectedAdRequestId = ref(null);
 const showDeleteModal = ref(false);
 const adRequestToDelete = ref(null);
+const showNegotiateModal = ref(false);
+const negotiationMessage = ref('');
+const negotiationAmount = ref(null);
   // Fetch all ad requests
   async function fetchAdRequests() {
     try {
@@ -226,6 +286,82 @@ async function deleteAdRequest() {
   } catch (error) {
     console.error("Error deleting ad request:", error);
     messageStore.setFlashMessage("An error occurred while deleting the ad request.", "error");
+  }
+}
+
+// Open negotiation modal
+function openNegotiateModal(adRequest) {
+  selectedAdRequestId.value = adRequest.id;
+  negotiationMessage.value = adRequest.messages || '';
+  negotiationAmount.value = adRequest.payment_amount;
+  showNegotiateModal.value = true;
+}
+
+// Close negotiation modal
+function closeNegotiateModal() {
+  showNegotiateModal.value = false;
+  negotiationMessage.value = '';
+  negotiationAmount.value = null;
+}
+
+// Respond to ad request
+async function respondToAdRequest(adRequestId, status) {
+  try {
+    const payload = { status };
+    const response = await fetch(
+      `${authStore.getBackendServerURL()}/sponsor/respond-negotiation/${adRequestId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authentication-Token': authStore.getAuthToken(),
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+    const data = await response.json();
+    if (response.ok) {
+      messageStore.setFlashMessage(data.message, 'success');
+      fetchCampaignAdRequests(); // Refresh the ad requests
+    } else {
+      messageStore.setFlashMessage(data.message || 'Failed to respond to ad request.', 'error');
+    }
+  } catch (error) {
+    console.error('Error responding to ad request:', error);
+    messageStore.setFlashMessage('An error occurred while responding to the ad request.', 'error');
+  }
+}
+
+// Submit negotiation
+async function submitNegotiation() {
+  try {
+    const payload = {
+      status: 'Negotiated',
+      payment_amount: parseFloat(negotiationAmount.value),
+      message: negotiationMessage.value,
+    };
+    const response = await fetch(
+      `${authStore.getBackendServerURL()}/sponsor/respond-negotiation/${selectedAdRequestId.value}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authentication-Token': authStore.getAuthToken(),
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+    const data = await response.json();
+    if (response.ok) {
+      messageStore.setFlashMessage(data.message, 'success');
+      closeNegotiateModal();
+      fetchAdRequests(); // Refresh the ad requests
+    } else {
+      messageStore.setFlashMessage(data.message || 'Failed to negotiate.', 'error');
+    }
+  } catch (error) {
+    console.error('Error submitting negotiation:', error);
+    messageStore.setFlashMessage('An error occurred while negotiating.', 'error');
   }
 }
 

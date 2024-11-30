@@ -60,7 +60,12 @@ const routes = [
     component: () => import('@/views/CampaignAdRequests.vue'),
     meta: { requiresAuth: true, sponsorOnly: true },
   },
-  
+  {
+    path: "/admin/user-management",
+    name: "AdminUserManagement",
+    component: () => import("@/views/AdminUserManagement.vue"),
+    meta: { requiresAuth: true, role: "admin" },
+  },
   
   {
     path: "/sponsor/create-campaign",
@@ -76,6 +81,23 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 });
+
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore(); // Access the authentication store
+  const userRoles = authStore.roles || []; // Get user roles from the store
+
+  // Check if the route requires authentication
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    next("/login"); // Redirect unauthenticated users to the login page
+  }
+  // Check if the route has role-based access control
+  else if (to.meta.roles && !to.meta.roles.some((role) => userRoles.includes(role))) {
+    next("/unauthorized"); // Redirect unauthorized users to an "unauthorized" page
+  } else {
+    next(); // Allow navigation
+  }
+});
+
 
 export default router;
 

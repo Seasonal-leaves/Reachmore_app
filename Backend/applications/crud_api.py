@@ -99,16 +99,22 @@ class AdminUserManagement(Resource):
     @auth_token_required
     @roles_required('admin')
     def get(self):
-        
         try:
-            #to add the funcitonality of grouping users by their roles
+            # Initialize user groups
             users_by_role = {
                 'influencers': [],
                 'sponsors': []
-                
             }
 
-            all_users = User.query.all()
+            # Fetch flagged user IDs
+            flagged_user_ids = db.session.query(Flag.flagged_user_id).filter(
+                Flag.status == 'Pending',
+                Flag.flagged_user_id.isnot(None)
+            ).subquery()
+
+            # Fetch all users excluding flagged users
+            all_users = User.query.filter(User.user_id.notin_(flagged_user_ids)).all()
+            
             for user in all_users:
                 role_names = [role.name for role in user.roles]
 
@@ -136,8 +142,6 @@ class AdminUserManagement(Resource):
                     }
                     if user.is_approved:
                         users_by_role['sponsors'].append(sponsor_data)
-                    
-               
 
             response = {
                 'message': 'User management data retrieved successfully',
@@ -147,6 +151,7 @@ class AdminUserManagement(Resource):
 
         except Exception as e:
             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
+
 
 class AdminStatisticsResource(Resource):
     @auth_token_required
@@ -262,8 +267,12 @@ class AdminFlagResource(Resource):
         flagged_campaign_id = flag_data.get('flagged_campaign_id')
         reason = flag_data.get('reason')
 
+        # Validation checks
         if not reason:
             return make_response(jsonify({'message': 'Reason for flagging is required'}), 400)
+
+        if len(reason) > 255:
+            return make_response(jsonify({'message': 'Reason is too long. Maximum 255 characters allowed'}), 400)
 
         if not flagged_user_id and not flagged_campaign_id:
             return make_response(jsonify({'message': 'Either flagged_user_id or flagged_campaign_id is required'}), 400)
@@ -272,15 +281,22 @@ class AdminFlagResource(Resource):
             return make_response(jsonify({'message': 'Only one of flagged_user_id or flagged_campaign_id can be set'}), 400)
 
         try:
+            # Check for flagged user or campaign existence
             if flagged_user_id:
                 user = User.query.get(flagged_user_id)
                 if not user:
                     return make_response(jsonify({'message': 'User not found'}), 404)
+                existing_flag = Flag.query.filter_by(flagged_user_id=flagged_user_id, status='Pending').first()
+                if existing_flag:
+                    return make_response(jsonify({'message': 'User is already flagged with a pending status'}), 400)
 
             if flagged_campaign_id:
                 campaign = Campaign.query.get(flagged_campaign_id)
                 if not campaign:
                     return make_response(jsonify({'message': 'Campaign not found'}), 404)
+                existing_flag = Flag.query.filter_by(flagged_campaign_id=flagged_campaign_id, status='Pending').first()
+                if existing_flag:
+                    return make_response(jsonify({'message': 'Campaign is already flagged with a pending status'}), 400)
 
             # Create a flag entry
             flag = Flag(
@@ -292,12 +308,22 @@ class AdminFlagResource(Resource):
             db.session.add(flag)
             db.session.commit()
 
-            return make_response(jsonify({'message': 'Entity successfully flagged', 'flag_id': flag.id}), 201)
+            # Return the full flag data
+            return make_response(jsonify({
+                'message': 'Entity successfully flagged',
+                'flag': {
+                    'id': flag.id,
+                    'flagged_user_id': flag.flagged_user_id,
+                    'flagged_campaign_id': flag.flagged_campaign_id,
+                    'reason': flag.reason,
+                    'status': flag.status,
+                    'timestamp': flag.timestamp
+                }
+            }), 201)
 
         except Exception as e:
             db.session.rollback()
             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
-
 
 
 class FlaggedCampaignsAPI(Resource):
@@ -682,43 +708,74 @@ class UpdateCampaignAPI(Resource):
             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
 
 
-
 class ViewCampaignsAPI(Resource):
     @auth_token_required
     def get(self):
         try:
             # Get the role of the logged-in user
             role = [role.name for role in current_user.roles][0]
+               # Check if the user is flagged
+            is_flagged_user = db.session.query(Flag).filter(
+                Flag.flagged_user_id == current_user.user_id,
+                Flag.status == 'Pending'
+            ).first()
+            if is_flagged_user and role == 'influencer':
+                return make_response(jsonify({'message': 'Access denied. You are flagged and cannot view campaigns.'}), 403)
 
-            # Sponsor: Fetch non-flagged campaigns created by the sponsor
+            # Fetch IDs of flagged influencers
+            flagged_influencer_ids = db.session.query(Flag.flagged_user_id).filter(
+                Flag.status == 'Pending',
+                Flag.flagged_user_id.isnot(None)
+            ).subquery()
+
+            # Fetch IDs of flagged campaigns
+            flagged_campaign_ids = db.session.query(Flag.flagged_campaign_id).filter(
+                Flag.status == 'Pending',
+                Flag.flagged_campaign_id.isnot(None)
+            ).subquery()
+
+            # Query campaigns based on user role
             if role == 'sponsor':
                 campaigns = Campaign.query.filter(
-                    (Campaign.sponsor_id == current_user.user_id) &
-                    (Campaign.id.notin_(
-                        db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
-                    ))
+                    Campaign.sponsor_id == current_user.user_id,
+                    Campaign.id.notin_(flagged_campaign_ids)
                 ).all()
 
-            # Admin: Fetch all non-flagged campaigns
             elif role == 'admin':
                 campaigns = Campaign.query.filter(
-                    Campaign.id.notin_(
-                        db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
-                    )
+                    Campaign.id.notin_(flagged_campaign_ids)
                 ).all()
 
-            # Influencer: Fetch only public, non-flagged campaigns
             else:  # Influencer
                 campaigns = Campaign.query.filter(
-                    (Campaign.visibility == 'public') &
-                    (Campaign.id.notin_(
-                        db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
-                    ))
+                    Campaign.visibility == 'public',
+                    Campaign.id.notin_(flagged_campaign_ids)
                 ).all()
 
-            # Format campaign data for response
-            campaigns_data = [
-                {
+            # Format campaigns and ad requests
+            campaigns_data = []
+            for campaign in campaigns:
+                # Fetch ad requests excluding flagged influencers
+                ad_requests = AdRequest.query.join(User, AdRequest.influencer_id == User.user_id).filter(
+                    AdRequest.campaign_id == campaign.id,
+                    User.user_id.notin_(flagged_influencer_ids)
+                ).all()
+
+                # Format ad requests for the campaign
+                ad_request_data = [
+                    {
+                        'id': ad_request.id,
+                        'influencer_id': ad_request.influencer_id,
+                        'influencer_name': ad_request.influencer.username,
+                        'requirements': ad_request.requirements,
+                        'payment_amount': ad_request.payment_amount,
+                        'status': ad_request.status
+                    }
+                    for ad_request in ad_requests
+                ]
+
+                # Append campaign details with filtered ad requests
+                campaigns_data.append({
                     'id': campaign.id,
                     'name': campaign.name,
                     'description': campaign.description,
@@ -726,10 +783,9 @@ class ViewCampaignsAPI(Resource):
                     'end_date': campaign.end_date,
                     'budget': campaign.budget,
                     'visibility': campaign.visibility,
-                    'goals': campaign.goals
-                }
-                for campaign in campaigns
-            ]
+                    'goals': campaign.goals,
+                    'ad_requests': ad_request_data
+                })
 
             return make_response(jsonify({'campaigns': campaigns_data}), 200)
 
@@ -973,7 +1029,8 @@ class SponsorRespondNegotiationAPI(Resource):
     def put(self, adrequest_id):
         try:
             # Fetch the ad request
-            ad_request = AdRequest.query.filter_by(id=adrequest_id).join(Campaign).filter(
+            ad_request = AdRequest.query.join(Campaign).filter(
+                AdRequest.id == adrequest_id,
                 Campaign.sponsor_id == current_user.user_id
             ).first()
             if not ad_request:
