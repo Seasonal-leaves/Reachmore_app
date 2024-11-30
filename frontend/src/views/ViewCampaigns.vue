@@ -19,17 +19,36 @@
       </div>
   
       <!-- Campaign List -->
+
+      
       <div v-else>
-        <div v-if="campaigns.length === 0" class="text-center">
-          <p>No campaigns available.</p>
-        </div>
-        <div v-else>
-          <div class="row">
-            <div
-              v-for="campaign in campaigns"
-              :key="campaign.id"
-              class="col-md-4 mb-4"
-            >
+        <div class="container mt-5">
+  <!-- <h1 class="text-center mb-4">All Campaigns</h1> -->
+
+  <!-- Search Bar -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <input
+        type="text"
+        v-model="campaignsearchQuery"
+        class="form-control"
+        placeholder="Search campaigns by name, description, visibility, or minimum budget..."
+      />
+    </div>
+  </div>
+
+
+
+         <!-- Campaign Results -->
+  <div v-if="filteredCampaigns.length === 0" class="text-center">
+    <p>No campaigns match your search criteria.</p>
+  </div>
+  <div v-else class="row">
+    <div
+      v-for="campaign in filteredCampaigns"
+      :key="campaign.id"
+      class="col-md-4 mb-4"
+    >
               <div class="card">
                 <div class="card-body">
                   <h5 class="card-title">{{ campaign.name }}</h5>
@@ -63,7 +82,13 @@
                   >
                     🗑️
                   </button>
-  
+                  <button
+  v-if="isSponsor"
+  @click="viewCampaignAdRequests(campaign.id)"
+  class="btn btn-outline-info mt-2"
+>
+  View Details
+</button>
                   <!-- Create Ad Request Button -->
                   <button
                     v-if="isSponsor"
@@ -237,6 +262,7 @@
   
   const campaigns = ref([]);
   const influencers = ref([]);
+  const campaignsearchQuery = ref("");
   const searchQuery = ref("");
   const selectedInfluencerId = ref(null);
   const showInfluencerAdRequestModal = ref(false);
@@ -279,6 +305,31 @@ const campaignToDelete = ref(null);
       messageStore.setFlashMessage("An error occurred while fetching campaigns.", "error");
     }
   }
+
+  // Computed property for filtered campaigns
+const filteredCampaigns = computed(() => {
+  if (!campaignsearchQuery.value) {
+    return campaigns.value;
+  }
+
+  const numericQuery = parseInt(campaignsearchQuery.value, 10);
+
+  if (!isNaN(numericQuery)) {
+    // Filter campaigns by minimum budget
+    return campaigns.value.filter((campaign) => campaign.budget >= numericQuery);
+  } else {
+    // Filter campaigns by name, description, or visibility
+    return campaigns.value.filter(
+      (campaign) =>
+        campaign.name.toLowerCase().includes(campaignsearchQuery.value.toLowerCase()) ||
+        (campaign.description &&
+          campaign.description.toLowerCase().includes(campaignsearchQuery.value.toLowerCase())) ||
+        (campaign.visibility &&
+          campaign.visibility.toLowerCase().includes(campaignsearchQuery.value.toLowerCase()))
+    );
+  }
+});
+
   
   async function fetchInfluencers() {
     if (!authStore.isSponsor()) {
@@ -359,7 +410,9 @@ async function deleteCampaign() {
     const modal = new bootstrap.Modal(document.getElementById("adRequestModal"));
     modal.show();
   }
-  
+  function viewCampaignAdRequests(campaignId) {
+  router.push({ path: `/sponsor/adrequests/${campaignId}` });
+}
   // Create AdRequest
   async function createAdRequest() {
     try {

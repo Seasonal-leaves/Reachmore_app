@@ -96,9 +96,9 @@ function logout() {
   <router-link to="/sponsor/influencers" class="nav-link">View Influencers</router-link>
 </li>
 
-            <li class="nav-item">
-              <RouterLink to="/sponsor/search-influencers" class="nav-link">Search Influencers</RouterLink>
-            </li>
+<li class="nav-item">
+      <router-link to="/sponsor/adrequests" class="nav-link">All Ad Requests</router-link>
+    </li>
           </template>
 
           <!-- Influencer Links -->

@@ -50,6 +50,17 @@ const routes = [
     name: "AdRequests",
     component: () => import("@/views/InfluencerAdRequests.vue"),
   },
+  {
+    path: '/sponsor/adrequests',
+    component: () => import('@/views/AllAdRequests.vue'),
+    meta: { requiresAuth: true, sponsorOnly: true },
+  },
+  {
+    path: '/sponsor/adrequests/:campaignId',
+    component: () => import('@/views/CampaignAdRequests.vue'),
+    meta: { requiresAuth: true, sponsorOnly: true },
+  },
+  
   
   {
     path: "/sponsor/create-campaign",

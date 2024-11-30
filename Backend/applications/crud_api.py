@@ -817,11 +817,11 @@ class ViewAdRequestAPI(Resource):
             campaign_id_filter = request.args.get('campaign_id', None)
 
             # Base query
-            query = AdRequest.query
+            query = AdRequest.query.join(Campaign).join(User, AdRequest.influencer_id == User.user_id)
 
             if "sponsor" in role_names:
                 # Sponsors can view ad requests for their campaigns only
-                query = query.join(Campaign).filter(Campaign.sponsor_id == user.user_id)
+                query = query.filter(Campaign.sponsor_id == user.user_id)
 
             elif "influencer" in role_names:
                 # Influencers can view only ad requests assigned to them
@@ -840,8 +840,8 @@ class ViewAdRequestAPI(Resource):
             ad_requests_data = [
                 {
                     'id': ad_request.id,
-                    'campaign_id': ad_request.campaign_id,
-                    'influencer_id': ad_request.influencer_id,
+                    'campaign_name': ad_request.campaign.name,
+                    'influencer_name': ad_request.influencer.username,
                     'messages': ad_request.messages,
                     'requirements': ad_request.requirements,
                     'payment_amount': ad_request.payment_amount,
@@ -858,6 +858,8 @@ class ViewAdRequestAPI(Resource):
 
         except Exception as e:
             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
+
+
 
 class UpdateAdRequestAPI(Resource):
     @auth_token_required
