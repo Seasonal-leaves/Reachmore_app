@@ -78,10 +78,10 @@
   </template>
   
   <script setup>
-  import { ref, onMounted } from 'vue';
-  import { useRouter, useRoute } from 'vue-router';
-  import { useAuthStore } from '@/stores/auth_store';
-  import { useMessageStore } from '@/stores/messageStore';
+  import { ref, onMounted } from "vue";
+  import { useRouter, useRoute } from "vue-router";
+  import { useAuthStore } from "@/stores/auth_store";
+  import { useMessageStore } from "@/stores/messageStore";
   
   const authStore = useAuthStore();
   const messageStore = useMessageStore();
@@ -89,19 +89,19 @@
   const route = useRoute();
   
   const campaignId = route.params.campaignId;
-  const name = ref('');
-  const description = ref('');
-  const start_date = ref('');
-  const end_date = ref('');
-  const budget = ref('');
-  const visibility = ref('');
-  const goals = ref('');
+  const name = ref("");
+  const description = ref("");
+  const start_date = ref("");
+  const end_date = ref("");
+  const budget = ref("");
+  const visibility = ref("");
+  const goals = ref("");
   
   // Helper to format date
   function formatDateForInput(dateString) {
     if (!dateString) return null;
     const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split("T")[0];
   }
   
   // Load campaign details
@@ -111,22 +111,45 @@
         `${authStore.getBackendServerURL()}/view-campaign?id=${campaignId}`,
         {
           headers: {
-            'Authentication-Token': authStore.getAuthToken(),
+            "Authentication-Token": authStore.getAuthToken(),
           },
         }
       );
       const data = await response.json();
-      const campaign = data.campaigns[0];
-      name.value = campaign.name;
-      description.value = campaign.description;
-      start_date.value = formatDateForInput(campaign.start_date);
-      end_date.value = formatDateForInput(campaign.end_date);
-      budget.value = campaign.budget;
-      visibility.value = campaign.visibility;
-      goals.value = campaign.goals;
+  
+      if (response.ok && data.campaigns) {
+        const campaign = data.campaigns.find(
+          (camp) => camp.id === parseInt(campaignId)
+        );
+  
+        if (campaign) {
+          name.value = campaign.name;
+          description.value = campaign.description;
+          start_date.value = formatDateForInput(campaign.start_date);
+          end_date.value = formatDateForInput(campaign.end_date);
+          budget.value = campaign.budget;
+          visibility.value = campaign.visibility;
+          goals.value = campaign.goals;
+        } else {
+          messageStore.setFlashMessage(
+            "Campaign not found or unauthorized access.",
+            "error"
+          );
+          router.push("/view-campaigns");
+        }
+      } else {
+        messageStore.setFlashMessage(
+          "Failed to load campaign details. Ensure the campaign exists.",
+          "error"
+        );
+        router.push("/view-campaigns");
+      }
     } catch (error) {
-      console.error('Error loading campaign details:', error);
-      messageStore.setFlashMessage('Failed to load campaign details.', 'error');
+      console.error("Error loading campaign details:", error);
+      messageStore.setFlashMessage(
+        "An error occurred while loading campaign details.",
+        "error"
+      );
     }
   });
   
@@ -145,24 +168,27 @@
       const response = await fetch(
         `${authStore.getBackendServerURL()}/sponsor/update-campaign/${campaignId}`,
         {
-          method: 'PUT',
+          method: "PUT",
           headers: {
-            'Content-Type': 'application/json',
-            'Authentication-Token': authStore.getAuthToken(),
+            "Content-Type": "application/json",
+            "Authentication-Token": authStore.getAuthToken(),
           },
           body: JSON.stringify(payload),
         }
       );
       const data = await response.json();
       if (response.ok) {
-        messageStore.setFlashMessage(data.message, 'success');
-        router.push('/');
+        messageStore.setFlashMessage(data.message, "success");
+        router.push("/view-campaigns");
       } else {
-        messageStore.setFlashMessage(data.message, 'error');
+        messageStore.setFlashMessage(data.message, "error");
       }
     } catch (error) {
-      messageStore.setFlashMessage('Failed to update campaign. Please try again.', 'error');
-      console.error('Error updating campaign:', error);
+      console.error("Error updating campaign:", error);
+      messageStore.setFlashMessage(
+        "Failed to update campaign. Please try again.",
+        "error"
+      );
     }
   }
   </script>

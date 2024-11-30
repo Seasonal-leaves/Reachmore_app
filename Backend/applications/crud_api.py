@@ -630,8 +630,6 @@ class CreateCampaignAPI(Resource):
         except Exception as e:
             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
 
-
-
 class UpdateCampaignAPI(Resource):
     @auth_token_required
     @roles_required('sponsor')
@@ -640,24 +638,33 @@ class UpdateCampaignAPI(Resource):
             # Fetch the campaign
             campaign = Campaign.query.filter_by(id=campaign_id, sponsor_id=current_user.user_id).first()
             if not campaign:
-                return make_response(jsonify({'message': 'Campaign not found or you are not authorized to update this campaign'}), 403)
+                return make_response(
+                    jsonify({'message': 'Campaign not found or you are not authorized to update this campaign'}),
+                    403
+                )
 
             # Get request data
             campaign_data = request.get_json()
 
-            # Parse dates if present
+            # Parse and validate dates
             if 'start_date' in campaign_data:
                 try:
                     campaign.start_date = datetime.strptime(campaign_data['start_date'], "%Y-%m-%d").date()
                 except ValueError:
-                    return make_response(jsonify({'message': 'Invalid format for start_date. Use yyyy-MM-dd'}), 400)
-            
+                    return make_response(
+                        jsonify({'message': 'Invalid format for start_date. Use yyyy-MM-dd'}),
+                        400
+                    )
+
             if 'end_date' in campaign_data and campaign_data['end_date']:
                 try:
                     campaign.end_date = datetime.strptime(campaign_data['end_date'], "%Y-%m-%d").date()
                 except ValueError:
-                    return make_response(jsonify({'message': 'Invalid format for end_date. Use yyyy-MM-dd'}), 400)
-            
+                    return make_response(
+                        jsonify({'message': 'Invalid format for end_date. Use yyyy-MM-dd'}),
+                        400
+                    )
+
             # Update other fields
             campaign.name = campaign_data.get('name', campaign.name)
             campaign.description = campaign_data.get('description', campaign.description)
@@ -665,6 +672,7 @@ class UpdateCampaignAPI(Resource):
             campaign.visibility = campaign_data.get('visibility', campaign.visibility)
             campaign.goals = campaign_data.get('goals', campaign.goals)
 
+            # Commit changes
             db.session.commit()
 
             return make_response(jsonify({'message': 'Campaign updated successfully'}), 200)
@@ -672,6 +680,7 @@ class UpdateCampaignAPI(Resource):
         except Exception as e:
             db.session.rollback()
             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
+
 
 
 class ViewCampaignsAPI(Resource):
