@@ -37,6 +37,14 @@
                   <p class="card-text"><small class="text-muted">Start Date: {{ campaign.start_date }}</small></p>
                   <p class="card-text"><small class="text-muted">Budget: ₹{{ campaign.budget }}</small></p>
   
+                <!-- Influencer Button -->
+<button
+  v-if="isInfluencer"
+  @click="openInfluencerAdRequestModal(campaign.id)"
+  class="btn btn-outline-success"
+>
+  Make Ad Request
+</button>
                   <!-- Edit Campaign Button -->
                   <button
                     v-if="isSponsor"
@@ -168,6 +176,53 @@
         </div>
       </div>
     </div>
+<!-- Influencer Modal -->
+<div
+  v-if="showInfluencerAdRequestModal"
+  id="adRequestModalForInfluencer"
+  class="modal-backdrop"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Make Ad Request (Influencer)</h5>
+        <button type="button" class="btn-close" @click="closeInfluencerAdRequestModal"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Influencer-specific ad request form -->
+        <p>Form for influencers to make ad requests...</p>
+        <!-- Requirements -->
+        <div class="mb-3">
+              <label for="requirements" class="form-label">Requirements</label>
+              <textarea
+                v-model="influencerAdRequestRequirements"
+                class="form-control"
+                id="requirements"
+                placeholder="Enter ad request requirements"
+              ></textarea>
+            </div>
+            <!-- Payment Amount -->
+            <div class="mb-3">
+              <label for="paymentAmount" class="form-label">Payment Amount</label>
+              <input
+                type="number"
+                v-model="influencerPaymentAmount"
+                class="form-control"
+                id="paymentAmount"
+                placeholder="Enter payment amount"
+              />
+            
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" @click="closeInfluencerAdRequestModal">Close</button>
+        <button class="btn btn-success" @click="submitInfluencerAdRequest">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+     
+
   </template>
   
   <script setup>
@@ -184,6 +239,10 @@
   const influencers = ref([]);
   const searchQuery = ref("");
   const selectedInfluencerId = ref(null);
+  const showInfluencerAdRequestModal = ref(false);
+  const selectedCampaignIdForInfluencer = ref(null);
+  const influencerAdRequestRequirements = ref("");
+const influencerPaymentAmount = ref(null);
   const adRequestRequirements = ref("");
   const paymentAmount = ref(null);
   const selectedCampaignId = ref(null);
@@ -192,6 +251,7 @@ const campaignToDelete = ref(null);
   
   const isAuthenticated = computed(() => authStore.isAuthenticated);
   const isSponsor = computed(() => authStore.isSponsor());
+  const isInfluencer = computed(() => authStore.isInfluencer());
   const filteredInfluencers = computed(() => {
     if (!searchQuery.value) return influencers.value;
     return influencers.value.filter((influencer) =>
@@ -221,6 +281,11 @@ const campaignToDelete = ref(null);
   }
   
   async function fetchInfluencers() {
+    if (!authStore.isSponsor()) {
+    // Do not fetch influencers if the user is not a sponsor
+    return;
+  }
+
     try {
       const response = await fetch(`${authStore.getBackendServerURL()}/sponsor/influencers`, {
         headers: {
@@ -330,7 +395,44 @@ async function deleteCampaign() {
       messageStore.setFlashMessage("An error occurred while creating AdRequest.", "error");
     }
   }
-  
+  // Open Influencer Ad Request Modal
+function openInfluencerAdRequestModal(campaignId) {
+  selectedCampaignIdForInfluencer.value = campaignId;
+  showInfluencerAdRequestModal.value = true;
+}
+
+// Submit Influencer Ad Request
+async function submitInfluencerAdRequest() {
+  try {
+    const payload = {
+      requirements: influencerAdRequestRequirements.value,
+      payment_amount: parseFloat(influencerPaymentAmount.value),
+    };
+
+    const response = await fetch(
+      `${authStore.getBackendServerURL()}/influencer/create-adrequest/${selectedCampaignIdForInfluencer.value}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authentication-Token": authStore.getAuthToken(),
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+    if (response.ok) {
+      messageStore.setFlashMessage(data.message, "success");
+      showInfluencerAdRequestModal.value = false; // Close the modal
+    } else {
+      messageStore.setFlashMessage(data.message || "Failed to create AdRequest.", "error");
+    }
+  } catch (error) {
+    console.error("Error creating Influencer AdRequest:", error);
+    messageStore.setFlashMessage("An error occurred while creating AdRequest.", "error");
+  }
+}
   onMounted(() => {
     fetchCampaigns();
     fetchInfluencers();

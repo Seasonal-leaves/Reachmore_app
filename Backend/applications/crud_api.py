@@ -739,6 +739,8 @@ class DeleteCampaignAPI(Resource):
                 return make_response(jsonify({'message': 'Campaign not found or you are not authorized to delete this campaign'}), 403)
 
             # Delete the campaign and associated ad requests
+          
+            AdRequest.query.filter_by(campaign_id=campaign.id).delete()
             db.session.delete(campaign)
             db.session.commit()
 
