@@ -27,6 +27,17 @@
               <p class="card-text"><strong>Requirements:</strong> {{ adRequest.requirements }}</p>
               <p class="card-text"><strong>Payment:</strong> ₹{{ adRequest.payment_amount }}</p>
               <p class="card-text"><strong>Status:</strong> {{ adRequest.status }}</p>
+              <!-- Update details button -->
+<div>
+  <button
+    v-if="isSponsor && adRequest.status === 'Pending'"
+    @click="openUpdateAdRequestModal(adRequest)"
+    class="btn btn-warning btn-sm"
+  >
+    Update Ad Request
+  </button>
+</div>
+
             </div>
           </div>
         </div>
@@ -92,6 +103,43 @@
         </div>
       </div>
     </div>
+    <!-- Update Ad Request Modal -->
+<div v-if="showUpdateAdRequestModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Update Ad Request</h5>
+        <button type="button" class="btn-close" @click="closeUpdateAdRequestModal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="requirements" class="form-label">Requirements</label>
+          <textarea
+            v-model="adRequestRequirements"
+            class="form-control"
+            id="requirements"
+            placeholder="Enter updated requirements"
+          ></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="paymentAmount" class="form-label">Payment Amount</label>
+          <input
+            type="number"
+            v-model="paymentAmount"
+            class="form-control"
+            id="paymentAmount"
+            placeholder="Enter updated payment amount"
+          />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" @click="closeUpdateAdRequestModal">Close</button>
+        <button class="btn btn-success" @click="submitUpdateAdRequest">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
   </template>
   
   <script setup>
@@ -115,7 +163,8 @@
   const adRequestRequirements = ref("");
   const paymentAmount = ref(null);
   const showAdRequestModal = ref(false);
-  
+  const showUpdateAdRequestModal = ref(false);
+const selectedAdRequestId = ref(null);
   // Computed properties
   const isSponsor = computed(() => authStore.isSponsor());
   const filteredInfluencers = computed(() => {
@@ -222,6 +271,61 @@
       messageStore.setFlashMessage("An error occurred while creating ad request.", "error");
     }
   }
+  // Open Update Modal
+function openUpdateAdRequestModal(adRequest) {
+  selectedAdRequestId.value = adRequest.id;
+  adRequestRequirements.value = adRequest.requirements;
+  paymentAmount.value = adRequest.payment_amount;
+  showUpdateAdRequestModal.value = true;
+}
+
+// Close Update Modal
+function closeUpdateAdRequestModal() {
+  showUpdateAdRequestModal.value = false;
+  selectedAdRequestId.value = null;
+  adRequestRequirements.value = "";
+  paymentAmount.value = null;
+}
+
+// Submit Updated Ad Request
+async function submitUpdateAdRequest() {
+  try {
+    await updateAdRequest(selectedAdRequestId.value); // Call the update function
+    closeUpdateAdRequestModal(); // Close the modal
+  } catch (error) {
+    console.error("Error submitting updated ad request:", error);
+  }
+}
+async function updateAdRequest(adRequestId) {
+  try {
+    const payload = {
+      requirements: adRequestRequirements.value,
+      payment_amount: parseFloat(paymentAmount.value),
+    };
+    const response = await fetch(
+      `${authStore.getBackendServerURL()}/sponsor/update-adrequest/${adRequestId}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authentication-Token": authStore.getAuthToken(),
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+    const data = await response.json();
+    if (response.ok) {
+      messageStore.setFlashMessage(data.message, "success");
+      fetchCampaignAdRequests(); // Refresh ad requests
+    } else {
+      messageStore.setFlashMessage(data.message || "Failed to update ad request.", "error");
+    }
+  } catch (error) {
+    console.error("Error updating ad request:", error);
+    messageStore.setFlashMessage("An error occurred while updating ad request.", "error");
+  }
+}
+
   
   // Lifecycle hooks
   onMounted(() => {

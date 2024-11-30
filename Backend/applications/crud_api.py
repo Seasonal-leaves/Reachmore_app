@@ -864,11 +864,11 @@ class ViewAdRequestAPI(Resource):
 class UpdateAdRequestAPI(Resource):
     @auth_token_required
     @roles_required('sponsor')
-    def put(self, ad_request_id):
+    def put(self, adrequest_id):
         try:
             # Fetch the ad request
             ad_request = AdRequest.query.join(Campaign).filter(
-                AdRequest.id == ad_request_id,
+                AdRequest.id == adrequest_id,
                 Campaign.sponsor_id == current_user.user_id
             ).first()
             if not ad_request:
