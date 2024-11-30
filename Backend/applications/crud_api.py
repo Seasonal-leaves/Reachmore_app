@@ -901,11 +901,11 @@ class UpdateAdRequestAPI(Resource):
 class DeleteAdRequestAPI(Resource):
     @auth_token_required
     @roles_required('sponsor')
-    def delete(self, ad_request_id):
+    def delete(self, adrequest_id):
         try:
             # Fetch the ad request
             ad_request = AdRequest.query.join(Campaign).filter(
-                AdRequest.id == ad_request_id,
+                AdRequest.id == adrequest_id,
                 Campaign.sponsor_id == current_user.user_id
             ).first()
             if not ad_request:
@@ -1185,7 +1185,7 @@ class InfluencerCreateAdRequestAPI(Resource):
                 messages=data.get('message', 'Ad request created by influencer'),
                 requirements=requirements,
                 payment_amount=payment_amount,
-                status='Pending'
+                status='Negotiated'
             )
 
             db.session.add(ad_request)
