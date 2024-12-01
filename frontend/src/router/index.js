@@ -78,7 +78,12 @@ const routes = [
       }
     },
   },
-  
+  {
+    path: "/admin/flagged-users",
+    name: "FlaggedUsers",
+    component: () => import("@/views/FlaggedUsers.vue"),
+    meta: { requiresAuth: true },
+  },
   {
     path: "/sponsor/create-campaign",
     name: "CreateCampaign",

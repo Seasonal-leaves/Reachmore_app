@@ -82,6 +82,16 @@ function logout() {
               <RouterLink to="/admin/dashboard" class="nav-link">Admin Dashboard</RouterLink>
             </li>
             <li class="nav-item">
+  <router-link
+    to="/admin/flagged-users"
+    class="nav-link"
+    v-if="authStore.isAdmin()"
+  >
+    Flagged Users
+  </router-link>
+</li>
+
+            <li class="nav-item">
               <RouterLink to="/admin/flags" class="nav-link">Manage Flags</RouterLink>
             </li>
             <li class="nav-item">
