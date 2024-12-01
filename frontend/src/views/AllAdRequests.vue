@@ -322,7 +322,7 @@ async function respondToAdRequest(adRequestId, status) {
     const data = await response.json();
     if (response.ok) {
       messageStore.setFlashMessage(data.message, 'success');
-      fetchCampaignAdRequests(); // Refresh the ad requests
+      fetchAdRequests(); // Refresh the ad requests
     } else {
       messageStore.setFlashMessage(data.message || 'Failed to respond to ad request.', 'error');
     }

@@ -18,6 +18,7 @@
       <p class="card-text"><strong>Budget:</strong> ₹{{ campaign.budget }}</p>
       <p class="card-text"><strong>Visibility:</strong> {{ campaign.visibility }}</p>
       <p class="card-text"><strong>Goals:</strong> {{ campaign.goals }}</p>
+      <p class="card-text"><strong>Flag ID:</strong> {{ campaign.flag_id }}</p> 
       <!-- Edit Campaign Button -->
       <button
         v-if="isSponsor"
@@ -26,6 +27,15 @@
       >
         Edit Campaign
       </button>
+    <!-- Update Resolve Flag Button -->
+
+<button
+v-if="isAdmin"
+  class="btn btn-success mt-2"
+  @click="resolveFlag(campaign.flag_id)"
+>
+  Resolve Flag
+</button>
     </div>
   </div>
 </div>
@@ -80,6 +90,7 @@
         budget: campaign.budget,
         visibility: campaign.visibility,
         goals: campaign.goals,
+        flag_id : campaign.flag_id,
       }));
     } else {
       messageStore.setFlashMessage(data.message || "Failed to fetch flagged campaigns.", "error");
@@ -110,6 +121,36 @@ function editCampaign(campaignId) {
       messageStore.setFlashMessage("Failed to navigate to the edit campaign page.", "error");
     });
 }
+async function resolveFlag(flagId) {
+    if (!flagId) {
+    console.error("No flag ID provided for resolving.");
+    return;
+  }
+  try {
+    const response = await fetch(
+      `${authStore.getBackendServerURL()}/admin/resolve-flag/${flagId}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authentication-Token": authStore.getAuthToken(),
+        },
+      }
+    );
+
+    const data = await response.json();
+    if (response.ok) {
+      messageStore.setFlashMessage(data.message, "success");
+      fetchFlaggedCampaigns(); // Refresh the flagged campaigns list
+    } else {
+      messageStore.setFlashMessage(data.message || "Failed to resolve flag.", "error");
+    }
+  } catch (error) {
+    console.error("Error resolving flag:", error);
+    messageStore.setFlashMessage("An error occurred while resolving the flag.", "error");
+  }
+}
+
 
   onMounted(() => {
     fetchFlaggedCampaigns();

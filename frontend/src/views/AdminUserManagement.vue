@@ -213,6 +213,7 @@ async function submitFlag() {
     const data = await response.json();
     if (response.ok) {
       messageStore.setFlashMessage(data.message, "success");
+      fetchUsersByRole();
       closeFlagModal();
     } else {
       messageStore.setFlashMessage(data.message || "Failed to flag the entity.", "error");

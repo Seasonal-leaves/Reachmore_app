@@ -325,7 +325,6 @@ class AdminFlagResource(Resource):
             db.session.rollback()
             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
 
-
 class FlaggedCampaignsAPI(Resource):
     @auth_token_required
     def get(self):
@@ -333,22 +332,22 @@ class FlaggedCampaignsAPI(Resource):
             # Get the role of the logged-in user
             role = [role.name for role in current_user.roles][0]
 
-            # Sponsor: Fetch only flagged campaigns created by the sponsor
-            if role == 'sponsor':
-                flagged_campaigns = Campaign.query.filter(
-                    (Campaign.sponsor_id == current_user.user_id) &
-                    (Campaign.id.in_(
-                        db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
-                    ))
-                ).all()
+            # Base query to fetch flagged campaigns with their associated flags
+            base_query = db.session.query(
+                Campaign,
+                Flag.reason,
+                Flag.id.label('flag_id')
+            ).join(Flag, Flag.flagged_campaign_id == Campaign.id).filter(Flag.status == 'Pending')
 
-            # Admin: Fetch all flagged campaigns
-            elif role == 'admin':
-                flagged_campaigns = Campaign.query.filter(
-                    Campaign.id.in_(
-                        db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
-                    )
+            # Filter by role
+            if role == 'sponsor':
+                flagged_campaigns = base_query.filter(
+                    Campaign.sponsor_id == current_user.user_id
                 ).all()
+            elif role == 'admin':
+                flagged_campaigns = base_query.all()
+            else:
+                return make_response(jsonify({'message': 'Unauthorized access'}), 403)
 
             # Format flagged campaign data for response
             flagged_campaigns_data = [
@@ -361,15 +360,18 @@ class FlaggedCampaignsAPI(Resource):
                     'budget': campaign.budget,
                     'visibility': campaign.visibility,
                     'goals': campaign.goals,
-                    'reason': db.session.query(Flag.reason).filter_by(flagged_campaign_id=campaign.id).first()[0]
+                    'reason': reason,
+                    'flag_id': flag_id
                 }
-                for campaign in flagged_campaigns
+                for campaign, reason, flag_id in flagged_campaigns
             ]
 
             return make_response(jsonify({'flagged_campaigns': flagged_campaigns_data}), 200)
 
         except Exception as e:
             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
+
+
 
 class AdminFlaggedUsersAPI(Resource):
     @auth_token_required

@@ -19,6 +19,13 @@
                 <strong>Flagged On:</strong> {{ formatDate(user.timestamp) }}
               </p>
               <p class="card-text"><strong>Status:</strong> {{ user.status }}</p>
+                   <!-- Resolve Flag Button -->
+            <button
+              class="btn btn-success mt-2"
+              @click="resolveFlag(user.flag_id)"
+            >
+              Resolve Flag
+            </button>
             </div>
           </div>
         </div>
@@ -79,7 +86,32 @@
       );
     }
   }
-  
+  async function resolveFlag(flagId) {
+  try {
+    const response = await fetch(
+      `${authStore.getBackendServerURL()}/admin/resolve-flag/${flagId}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authentication-Token": authStore.getAuthToken(),
+        },
+      }
+    );
+
+    const data = await response.json();
+    if (response.ok) {
+      messageStore.setFlashMessage(data.message, "success");
+      fetchFlaggedUsers(); // Refresh the flagged users list
+    } else {
+      messageStore.setFlashMessage(data.message || "Failed to resolve flag.", "error");
+    }
+  } catch (error) {
+    console.error("Error resolving flag:", error);
+    messageStore.setFlashMessage("An error occurred while resolving the flag.", "error");
+  }
+}
+
   onMounted(() => {
     fetchFlaggedUsers();
   });

@@ -57,8 +57,8 @@ api.add_resource(AdminUserManagement, '/admin/user-management')                 
 api.add_resource(AdminStatisticsResource, '/admin/statistics')
 api.add_resource(AdminFlagResource, '/admin/flag')                              #working properly    
 api.add_resource(FlaggedCampaignsAPI, '/flagged-campaigns')                     #working properly  
-api.add_resource(AdminFlaggedUsersAPI, '/admin/flagged-users')
-api.add_resource(AdminResolveFlagResource, '/admin/resolve-flag/<int:flag_id>')
+api.add_resource(AdminFlaggedUsersAPI, '/admin/flagged-users')                  #working properly     
+api.add_resource(AdminResolveFlagResource, '/admin/resolve-flag/<int:flag_id>') #working properly
 api.add_resource(AdminDeleteFlaggedResource, '/admin/delete-flagged/<int:flag_id>')
 #api.add_resource(CampaignList, '/campaigns') # 
 
