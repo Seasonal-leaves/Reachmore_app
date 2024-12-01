@@ -714,7 +714,11 @@ class ViewCampaignsAPI(Resource):
         try:
             # Get the role of the logged-in user
             role = [role.name for role in current_user.roles][0]
-               # Check if the user is flagged
+
+            # Get query parameters
+            campaign_id = request.args.get('id')  # Optional parameter for specific campaign
+
+            # Check if the user is flagged
             is_flagged_user = db.session.query(Flag).filter(
                 Flag.flagged_user_id == current_user.user_id,
                 Flag.status == 'Pending'
@@ -733,6 +737,53 @@ class ViewCampaignsAPI(Resource):
                 Flag.status == 'Pending',
                 Flag.flagged_campaign_id.isnot(None)
             ).subquery()
+
+            # Handle specific campaign query (e.g., for editing)
+            if campaign_id:
+                campaign = Campaign.query.filter_by(id=campaign_id).first()
+
+                # Ensure sponsor can access their flagged campaign
+                if role == 'sponsor' and campaign.sponsor_id != current_user.user_id:
+                    return make_response(
+                        jsonify({'message': 'Campaign not found or unauthorized access'}),
+                        403
+                    )
+
+                # Ensure the campaign exists
+                if not campaign:
+                    return make_response(jsonify({'message': 'Campaign not found'}), 404)
+
+                # Format the single campaign response
+                ad_requests = AdRequest.query.join(User, AdRequest.influencer_id == User.user_id).filter(
+                    AdRequest.campaign_id == campaign.id,
+                    User.user_id.notin_(flagged_influencer_ids)
+                ).all()
+
+                ad_request_data = [
+                    {
+                        'id': ad_request.id,
+                        'influencer_id': ad_request.influencer_id,
+                        'influencer_name': ad_request.influencer.username,
+                        'requirements': ad_request.requirements,
+                        'payment_amount': ad_request.payment_amount,
+                        'status': ad_request.status
+                    }
+                    for ad_request in ad_requests
+                ]
+
+                campaign_data = {
+                    'id': campaign.id,
+                    'name': campaign.name,
+                    'description': campaign.description,
+                    'start_date': campaign.start_date,
+                    'end_date': campaign.end_date,
+                    'budget': campaign.budget,
+                    'visibility': campaign.visibility,
+                    'goals': campaign.goals,
+                    'ad_requests': ad_request_data
+                }
+
+                return make_response(jsonify({'campaigns': [campaign_data]}), 200)
 
             # Query campaigns based on user role
             if role == 'sponsor':

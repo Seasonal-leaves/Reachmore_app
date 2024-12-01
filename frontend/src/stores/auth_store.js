@@ -120,6 +120,9 @@ export const useAuthStore = defineStore('auth', () => {
     function isInfluencer() {
         return hasRole('influencer');
     }
+    function isAdminOrSponsor() {
+        return isAdmin() || isSponsor();
+    }
 
     return {
         getBackendServerURL, // Include this in the returned object
@@ -134,6 +137,7 @@ export const useAuthStore = defineStore('auth', () => {
         userRoles,
         isAdmin,
         isSponsor,
+        isAdminOrSponsor,
         isInfluencer,
     };
 });

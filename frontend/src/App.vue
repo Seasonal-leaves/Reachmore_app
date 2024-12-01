@@ -115,6 +115,9 @@ function logout() {
   My Ad Requests
 </router-link>
           </template>
+          <li v-if="authStore.isAdminOrSponsor()" class="nav-item">
+            <router-link to="/flagged-campaigns" class="nav-link">Flagged Campaigns</router-link>
+          </li>
 
           <!-- Logged-in User Links -->
           <template v-if="isAuthenticated">

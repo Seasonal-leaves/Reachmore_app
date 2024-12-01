@@ -66,6 +66,18 @@ const routes = [
     component: () => import("@/views/AdminUserManagement.vue"),
     meta: { requiresAuth: true, role: "admin" },
   },
+  {
+    path: "/flagged-campaigns",
+    component: () => import("@/views/FlaggedCampaigns.vue"),
+    beforeEnter: (to, from, next) => {
+      const authStore = useAuthStore();
+      if (authStore.isAdminOrSponsor()) {
+        next();
+      } else {
+        next("/unauthorized"); // Redirect unauthorized users
+      }
+    },
+  },
   
   {
     path: "/sponsor/create-campaign",
