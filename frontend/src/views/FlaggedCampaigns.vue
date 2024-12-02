@@ -36,6 +36,14 @@ v-if="isAdmin"
 >
   Resolve Flag
 </button>
+   <!-- Delete Flagged Entity Button -->
+   <button
+              v-if="isAdmin"
+              class="btn btn-danger mt-2 ml-2"
+              @click="deleteFlaggedEntity(campaign.flag_id)"
+            >
+              Delete Flagged Entity
+            </button>
     </div>
   </div>
 </div>
@@ -150,7 +158,35 @@ async function resolveFlag(flagId) {
     messageStore.setFlashMessage("An error occurred while resolving the flag.", "error");
   }
 }
-
+// Delete flagged entity (campaign or user)
+async function deleteFlaggedEntity(flagId) {
+  if (!flagId) {
+    console.error("No flag ID provided for deletion.");
+    return;
+  }
+  try {
+    const response = await fetch(
+      `${authStore.getBackendServerURL()}/admin/delete-flagged/${flagId}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authentication-Token": authStore.getAuthToken(),
+        },
+      }
+    );
+    const data = await response.json();
+    if (response.ok) {
+      messageStore.setFlashMessage(data.message, "success");
+      fetchFlaggedCampaigns(); // Refresh flagged campaigns after deletion
+    } else {
+      messageStore.setFlashMessage(data.message || "Failed to delete flagged entity.", "error");
+    }
+  } catch (error) {
+    console.error("Error deleting flagged entity:", error);
+    messageStore.setFlashMessage("An error occurred while deleting the flagged entity.", "error");
+  }
+}
 
   onMounted(() => {
     fetchFlaggedCampaigns();

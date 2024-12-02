@@ -427,6 +427,8 @@ class AdminResolveFlagResource(Resource):
             db.session.rollback()
             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
 
+import traceback
+
 class AdminDeleteFlaggedResource(Resource):
     @auth_token_required
     @roles_required('admin')
@@ -447,7 +449,7 @@ class AdminDeleteFlaggedResource(Resource):
                 if not user:
                     return make_response(jsonify({'message': 'Flagged user not found'}), 404)
                 # Delete associated AdRequests
-                AdRequest.query.filter_by(influencer_id=user.id).delete() 
+                AdRequest.query.filter_by(influencer_id=user.user_id).delete() 
                 db.session.delete(user)
 
             # Check if the flagged entity is a campaign
@@ -464,10 +466,12 @@ class AdminDeleteFlaggedResource(Resource):
             db.session.commit()
 
             return make_response(jsonify({'message': f'Flagged entity (Flag ID: {flag_id}) deleted successfully'}), 200)
-
         except Exception as e:
-            db.session.rollback()
-            return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
+                    # Log the error for debugging
+                    print(f"Error: {str(e)}")
+                    print(f"Stacktrace: {traceback.format_exc()}")
+                    db.session.rollback()
+                    return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
 
 
 
