@@ -173,10 +173,16 @@ class AdminStatisticsResource(Resource):
                 db.func.count(AdRequest.id)
             ).group_by(AdRequest.status).all()
 
-            # Flagged entities
-            total_flagged_users = Flag.query.filter(Flag.flagged_user_id.isnot(None)).count()
-            total_flagged_campaigns = Flag.query.filter(Flag.flagged_campaign_id.isnot(None)).count()
+           # Flagged entities - only "Pending" status
+            total_flagged_users = Flag.query.filter(
+                Flag.flagged_user_id.isnot(None),
+                Flag.status == 'Pending'
+            ).count()
 
+            total_flagged_campaigns = Flag.query.filter(
+                Flag.flagged_campaign_id.isnot(None),
+                Flag.status == 'Pending'
+            ).count()
             # Preparing statistics response
             statistics = {
                 'total_users': {

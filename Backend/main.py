@@ -54,7 +54,7 @@ from applications.crud_api import *
 api.add_resource(AdminApproveSponsor, '/admin/approve-sponsor/<int:sponsor_id>') #working properly
 api.add_resource(PendingApprovals, '/admin/pending-approvals')                   #working properly
 api.add_resource(AdminUserManagement, '/admin/user-management')                  #working properly
-api.add_resource(AdminStatisticsResource, '/admin/statistics')
+api.add_resource(AdminStatisticsResource, '/admin/statistics')                  #working properly
 api.add_resource(AdminFlagResource, '/admin/flag')                              #working properly    
 api.add_resource(FlaggedCampaignsAPI, '/flagged-campaigns')                     #working properly  
 api.add_resource(AdminFlaggedUsersAPI, '/admin/flagged-users')                  #working properly     
