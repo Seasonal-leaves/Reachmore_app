@@ -72,6 +72,9 @@ function logout() {
           <li v-if="!isAuthenticated" class="nav-item">
             <RouterLink to="/register" class="nav-link">Register</RouterLink>
           </li>
+          <li v-if="isAuthenticated" class="nav-item">
+              <span class="nav-link">Hello {{ userDetails.username }},</span>
+            </li>
 
           <!-- Admin Links -->
           <template v-if="isAdmin">
@@ -82,6 +85,9 @@ function logout() {
               <RouterLink to="/admin/dashboard" class="nav-link">Admin Dashboard</RouterLink>
             </li>
             <li class="nav-item">
+  <RouterLink to="/admin/pending-approvals" class="nav-link">Pending Approvals</RouterLink>
+</li>
+            <li class="nav-item">
   <router-link
     to="/admin/flagged-users"
     class="nav-link"
@@ -91,12 +97,7 @@ function logout() {
   </router-link>
 </li>
 
-            <li class="nav-item">
-              <RouterLink to="/admin/flags" class="nav-link">Manage Flags</RouterLink>
-            </li>
-            <li class="nav-item">
-  <RouterLink to="/admin/pending-approvals" class="nav-link">Pending Approvals</RouterLink>
-</li>
+   
           </template>
 
           <!-- Sponsor Links -->
@@ -131,9 +132,7 @@ function logout() {
 
           <!-- Logged-in User Links -->
           <template v-if="isAuthenticated">
-            <li class="nav-item">
-              <span class="nav-link">Hello {{ userDetails.username }},</span>
-            </li>
+            
             <li v-if="isAuthenticated" class="nav-item">
             <RouterLink to="/update-profile" class="nav-link">Profile</RouterLink>
           </li>

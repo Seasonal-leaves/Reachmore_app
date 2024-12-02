@@ -3,6 +3,7 @@
       <h1 class="text-center mb-4">{{ isAuthenticated ? "All Campaigns" : "Welcome to Reachmore!" }}</h1>
   
       <!-- Welcome Section for Unauthenticated Users -->
+       
       <div v-if="!isAuthenticated" class="text-center">
         <p class="lead">
           Looking to grow your reach or make your brand the next big thing? Join <strong>Reachmore</strong> today!
@@ -343,8 +344,11 @@ const flaggedCampaignId = ref(null);
       if (response.ok) {
         campaigns.value = data.campaigns;
       } else {
+        if(!authStore.isAuthenticated){
+            messageStore.setFlashMessage(data.message || "A lot of exciting campaigns await once you log in", "error");
+        }else{
         messageStore.setFlashMessage(data.message || "Failed to fetch campaigns.", "error");
-      }
+      }}
     } catch (error) {
       console.error("Error fetching campaigns:", error);
       messageStore.setFlashMessage("An error occurred while fetching campaigns.", "error");

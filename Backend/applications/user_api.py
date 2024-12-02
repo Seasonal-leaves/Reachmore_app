@@ -4,7 +4,7 @@ from flask_security import hash_password, utils, auth_token_required, current_us
 from applications.user_datastore import user_datastore
 from applications.database import db
 from applications.models import User
-
+import traceback
 
 VALID_ROLES = ["influencer", "sponsor", "admin"]
 
@@ -93,17 +93,15 @@ class UserRegistration(Resource):
 
             return make_response(jsonify(response), 201)
         except Exception as e:
-            response = {
-                'message': 'Internal Error',
-                'error': str(e)
-            }
-            return make_response(jsonify(response), 500)
+                    # Log the error for debugging
+                    print(f"Error: {str(e)}")
+                    print(f"Stacktrace: {traceback.format_exc()}")
+                    db.session.rollback()
+                    return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
 
 
 
-from flask_restful import Resource
-from flask import request, jsonify
-from applications.user_datastore import user_datastore
+
 
 class CheckEmailAPI(Resource):
     def get(self):

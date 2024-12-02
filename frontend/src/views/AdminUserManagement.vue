@@ -86,7 +86,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Flag {{ flaggedUserId ? 'User' : 'Campaign' }}</h5>
-        <button type="button" class="btn-close" @click="closeFlagModal"></button>
+   
       </div>
       <div class="modal-body">
         <div class="mb-3">

@@ -25,7 +25,7 @@ def create_app():
         sponsor_role = app.security.datastore.find_or_create_role(name='sponsor')
         influencer_role = app.security.datastore.find_or_create_role(name='influencer')
 
-        if not app.security.datastore.find_user(username = 'Ritam_admin'):
+        if not app.security.datastore.find_user(email='ritam_admin@gmail.com'):
             app.security.datastore.create_user(username='Ritam_admin',
                                        email='ritam_admin@gmail.com',
                                        password=hash_password('ritam_admin'),

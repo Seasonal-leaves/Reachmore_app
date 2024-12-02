@@ -520,6 +520,17 @@ class GetAllInfluencersResource(Resource):
     @roles_required('sponsor')
     def get(self):
         try:
+             # Check if the sponsor is flagged
+            is_flagged_sponsor = db.session.query(Flag).filter(
+                Flag.flagged_user_id == current_user.user_id,
+                Flag.status == 'Pending'
+            ).first()
+
+            if is_flagged_sponsor:
+                # Return the reason for flagging
+                return make_response(jsonify({
+                    'message': f"Access denied. You are flagged and cannot view influencers. Reason: {is_flagged_sponsor.reason}"
+                }), 403)
             # Fetch the influencer role
             influencer_role = Role.query.filter_by(name="influencer").first()
             if not influencer_role:
@@ -730,7 +741,8 @@ class ViewCampaignsAPI(Resource):
                 Flag.status == 'Pending'
             ).first()
             if is_flagged_user and role == 'influencer':
-                return make_response(jsonify({'message': 'Access denied. You are flagged and cannot view campaigns.'}), 403)
+                return make_response(jsonify({'message': f'Access denied. You are flagged and cannot view campaigns. Reason: {is_flagged_user.reason}'
+                }), 403)
 
             # Fetch IDs of flagged influencers
             flagged_influencer_ids = db.session.query(Flag.flagged_user_id).filter(
