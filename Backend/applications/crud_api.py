@@ -1,6 +1,7 @@
 from flask_restful import Resource, reqparse
 from flask import jsonify, request, make_response
 from applications.database import db
+from sqlalchemy.orm import aliased
 from applications.models import *
 from flask_security import auth_token_required, roles_accepted, roles_required, current_user
 from datetime import datetime
@@ -520,7 +521,6 @@ class CampaignList(Resource):
 
 
 ' Sponsor api'
-
 class GetAllInfluencersResource(Resource):
     @auth_token_required
     @roles_required('sponsor')
@@ -542,14 +542,18 @@ class GetAllInfluencersResource(Resource):
             if not influencer_role:
                 return make_response(jsonify({'message': 'Influencer role not found'}), 404)
 
-            # Fetch unflagged influencers
-            influencers = User.query.filter(
-                User.roles.contains(influencer_role),
-                User.user_id.notin_(
-                    db.session.query(Flag.flagged_user_id).filter(Flag.status == 'Pending')
-                )
-            ).all()
+             # Step 1: Fetch all influencers
+            all_influencers = User.query.filter(User.roles.contains(influencer_role)).all()
 
+            # Step 2: Get IDs of users with "Pending" flags
+            flagged_user_ids = [
+                flag.flagged_user_id for flag in Flag.query.filter(Flag.status == 'Pending').all()
+            ]
+
+            # Step 3: Filter out influencers whose flag status is "Pending"
+            unflagged_influencers = [
+                influencer for influencer in all_influencers if influencer.user_id not in flagged_user_ids
+            ]
             # Format response
             influencer_data = [
                 {
@@ -560,7 +564,7 @@ class GetAllInfluencersResource(Resource):
                     'niche': influencer.niche,
                     'reach': influencer.reach,
                 }
-                for influencer in influencers
+                for influencer in unflagged_influencers
             ]
 
             return make_response(jsonify({
@@ -570,7 +574,6 @@ class GetAllInfluencersResource(Resource):
 
         except Exception as e:
             return make_response(jsonify({'message': 'Internal server error', 'error': str(e)}), 500)
-
 
 class SearchInfluencersAPI(Resource):
     @auth_token_required

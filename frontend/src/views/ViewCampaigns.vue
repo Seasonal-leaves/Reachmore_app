@@ -395,6 +395,7 @@ const filteredCampaigns = computed(() => {
       });
       const data = await response.json();
       if (response.ok) {
+        console.log(data)
         influencers.value = data.influencers;
       } else {
         messageStore.setFlashMessage(data.message || "Failed to fetch influencers.", "error");
