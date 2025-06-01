@@ -99,6 +99,6 @@ Contributions are welcome! Please fork the repository and submit a pull request.
 
 ## 👨‍💻 Developed By
 
-- [Your Name]  
-- Contact: [your.email@example.com]  
+- [Rituparno Sen]  
+- Contact: [ritam_sen@ymail.com]  
 - Organization: [Your Organization / College]
