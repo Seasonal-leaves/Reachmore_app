@@ -22,7 +22,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     function getUserDetails() {
         try {
-            return user_details.value;
+            return user_details.value ;
         } catch (error) {
             console.error('Error parsing user details:', error);
             return null; // Return null if parsing fails

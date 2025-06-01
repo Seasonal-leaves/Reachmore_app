@@ -222,7 +222,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Make Ad Request (Influencer)</h5>
-        <button type="button" class="btn-close" @click="closeInfluencerAdRequestModal"></button>
+       
       </div>
       <div class="modal-body">
         <!-- Influencer-specific ad request form -->

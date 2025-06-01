@@ -1,0 +1,29 @@
+# In your task or view function (like daily_reminder or monthly_report)
+from flask import render_template
+from datetime import datetime, timedelta
+
+def monthly_report():
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=30)  # Last 30 days
+    current_month = end_date.strftime('%B %Y')
+
+    sponsors = User.query.filter_by(role_id=2).all()  # Fetch sponsors
+    data = []
+    for sponsor in sponsors:
+        campaigns = Campaign.query.filter_by(sponsor_id=sponsor.id).all()
+        total_budget = sum(campaign.budget for campaign in campaigns)  # Sum of budgets
+        campaigns_count = len(campaigns)  # Number of campaigns
+        
+        sponsor_data = {
+            'name': sponsor.name,
+            'email': sponsor.email,
+            'campaigns_count': campaigns_count,
+            'total_budget': total_budget
+        }
+        data.append(sponsor_data)
+
+    # Pass data to the template
+    html_content_template = render_template('monthly_report.html', month=current_month, data=data)
+
+    for sponsor_data in data:
+        send_message(to=sponsor_data['email'], subject=f"Monthly Progress Report - {current_month}", content_body=html_content_template)

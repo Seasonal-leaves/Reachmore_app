@@ -5,3 +5,4 @@ flask
 Flask-SQLAlchemy
 setuptools
 argon2_cffi
+celery>=5.0.0

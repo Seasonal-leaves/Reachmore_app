@@ -6,6 +6,9 @@ from flask_restful import Api
 from flask_security import Security, hash_password
 from applications.user_datastore import user_datastore
 from flask_cors import CORS
+from celery.schedules import crontab
+from celery_worker import create_celery_app 
+from celery_tasks import daily_reminder, monthly_report
 
 
 def create_app():
@@ -16,6 +19,7 @@ def create_app():
     db.init_app(app)
     api = Api(app, prefix='/api/iescp2')
     app.security = Security(app, user_datastore)
+    celery_app = create_celery_app()
 
 
     with app.app_context():
@@ -34,10 +38,11 @@ def create_app():
             
         db.session.commit()
     
-    return app,api
+    return app,api, celery_app 
 
-app, api = create_app()
+app, api, celery_app = create_app()
 CORS(app, resources={r"/api/*": {"origins": "*"}})
+# celery_app = celery_init_app(app)
 
 from applications.user_api import *
 
@@ -69,14 +74,14 @@ api.add_resource(GetAllInfluencersResource, '/sponsor/influencers')             
 api.add_resource(SearchInfluencersAPI, '/sponsor/search-influencers')               #done without usig api
 api.add_resource(CreateCampaignAPI, '/sponsor/create-campaign')                     #working properly
 api.add_resource(ViewCampaignsAPI, '/view-campaign')                                #working properly
-
+# api.add_resource(SponsorDashboardResource, '/sponsor/dashboard')   
 api.add_resource(UpdateCampaignAPI, '/sponsor/update-campaign/<int:campaign_id>')   #working properly
 api.add_resource(DeleteCampaignAPI, '/sponsor/delete-campaign/<int:campaign_id>')   #working properly
 api.add_resource(CreateAdRequestAPI, '/sponsor/create-adrequest')                   #working properly
 api.add_resource(ViewAdRequestAPI, '/sponsor/view-adrequest')                       #working properly
 api.add_resource(UpdateAdRequestAPI, '/sponsor/update-adrequest/<int:adrequest_id>')#working properly
 api.add_resource(DeleteAdRequestAPI, '/sponsor/delete-adrequest/<int:adrequest_id>')#woring properly
-api.add_resource(CampaignStatisticsAPI, '/sponsor/campaign-statistics/<int:campaign_id>')
+api.add_resource(CampaignStatisticsAPI, '/sponsor/campaign-statistics/<int:campaign_id>')#woring properly
 api.add_resource(SponsorRespondNegotiationAPI, '/sponsor/respond-negotiation/<int:adrequest_id>')#woring properly
 
 #influencer api endpoints
@@ -86,6 +91,19 @@ api.add_resource(InfluencerAdRequestsAPI, '/influencer/ad-requests')            
 api.add_resource(InfluencerRespondAdRequestAPI, '/influencer/respond-adrequest/<int:adrequest_id>')  #working properly
 api.add_resource(InfluencerCreateAdRequestAPI, '/influencer/create-adrequest/<int:campaign_id>')    #working properly
 
+@celery_app.on_after_finalize.connect
+def send_email(sender, **kwargs):
+        sender.add_periodic_task(
+            crontab(hour=18, minute=11),
+            daily_reminder,
+        )
+
+@celery_app.on_after_finalize.connect
+def send_report_email(sender, **kwargs):
+        sender.add_periodic_task(
+            crontab(hour=18, minute=11, day_of_month=3),
+            monthly_report,
+        )
 
 
 

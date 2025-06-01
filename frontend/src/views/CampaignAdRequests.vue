@@ -1,81 +1,143 @@
 <template>
-    <div class="container mt-5">
-      <h1 class="text-center mb-4">{{ campaignName }} - Ad Requests</h1>
-  
-      <!-- Create Ad Request Button -->
-      <button
-        v-if="isSponsor"
-        @click="openAdRequestModal"
-        class="btn btn-primary mb-4"
-      >
-        Create Ad Request
-      </button>
-  
-      <!-- Ad Requests List -->
-      <div v-if="adRequests.length === 0" class="text-center">
-        <p>No ad requests for this campaign.</p>
-      </div>
-      <div v-else class="row">
-        <div
-          v-for="adRequest in adRequests"
-          :key="adRequest.id"
-          class="col-md-6 mb-4"
-        >
-        <div class="card h-100 position-relative">
-    <div class="card-body">
-      <!-- Delete Button at Top Right -->
-      <button
-        v-if="adRequest.status === 'Pending' || adRequest.status === 'Negotiated' || adRequest.status === 'Rejected'"
-        @click="confirmDeleteAdRequest(adRequest.id)"
-        class="btn btn-danger btn-sm position-absolute top-0 end-0"
-        title="Delete Ad Request"
-      >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
-  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-  <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
-</svg>
-    
-    </button>
-              <h5 class="card-title">{{ adRequest.influencer_name }}</h5>
-              <p class="card-text"><strong>Requirements:</strong> {{ adRequest.requirements }}</p>
-              <p class="card-text"><strong>Payment:</strong> ₹{{ adRequest.payment_amount }}</p>
-              <p class="card-text"><strong>Status:</strong> {{ adRequest.status }}</p>
-              <!-- Update details button -->
-<div>
-  <button
-    v-if="isSponsor && adRequest.status === 'Pending'"
-    @click="openUpdateAdRequestModal(adRequest)"
-    class="btn btn-warning btn-sm"
-  >
-    Update Ad Request
-  </button>
-  <button
-      v-if="adRequest.status === 'Negotiated'"
-      class="btn btn-success me-2"
-      @click="respondToAdRequest(adRequest.id, 'Accepted')"
-    >
-      Accept
-    </button>
-    <button
-      v-if="adRequest.status === 'Negotiated'"
-      class="btn btn-danger me-2"
-      @click="respondToAdRequest(adRequest.id, 'Rejected')"
-    >
-      Reject
-    </button>
-    <button
-      v-if="adRequest.status === 'Negotiated'"
-      class="btn btn-warning"
-      @click="openNegotiateModal(adRequest)"
-    >
-      Negotiate
-    </button>
-</div>
+     <div class="container mt-5">
+    <h1 class="text-center mb-4">{{ campaignStatistics.name }} - Dashboard</h1>
 
+    <!-- Campaign Statistics -->
+    <div class="row mb-5">
+      <div class="col-md-4">
+        <div class="card h-100 text-center">
+          <div class="card-body">
+            <h5 class="card-title">Total Budget</h5>
+            <p class="card-text">₹{{ campaignStatistics.total_budget }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 text-center">
+          <div class="card-body">
+            <h5 class="card-title">Spent Budget</h5>
+            <p class="card-text">₹{{ campaignStatistics.spent_budget }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 text-center">
+          <div class="card-body">
+            <h5 class="card-title">Remaining Budget</h5>
+            <p class="card-text">₹{{ campaignStatistics.remaining_budget }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ad Request Status Breakdown -->
+    <div class="row mb-5">
+      <div class="col-md-12">
+        <h4 class="text-center mb-3">Ad Request Status Breakdown</h4>
+        <div class="row">
+          <div
+            v-for="(count, status) in campaignStatistics.ad_request_counts"
+            :key="status"
+            class="col-md-3"
+          >
+            <div class="card h-100 text-center">
+              <div class="card-body">
+                <h5 class="card-title">{{ status }}</h5>
+                <p class="card-text">{{ count }} Requests</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Ad Requests Section -->
+    <h1 class="text-center mb-4">{{ campaignName }} - Ad Requests</h1>
+
+    <!-- Create Ad Request Button -->
+    <div class="text-center mb-4">
+      <button
+        v-if="isSponsor"
+        @click="openAdRequestModal"
+        class="btn btn-primary"
+      >
+        Create Ad Request
+      </button>
+    </div>
+
+    <!-- Ad Requests List -->
+    <div v-if="adRequests.length === 0" class="text-center">
+      <p>No ad requests for this campaign.</p>
+    </div>
+    <div v-else class="row">
+      <div
+        v-for="adRequest in adRequests"
+        :key="adRequest.id"
+        class="col-md-6 mb-4"
+      >
+        <div class="card h-100 position-relative">
+          <div class="card-body">
+            <!-- Delete Button -->
+            <button
+              v-if="['Pending', 'Negotiated', 'Rejected'].includes(adRequest.status)"
+              @click="confirmDeleteAdRequest(adRequest.id)"
+              class="btn btn-danger btn-sm position-absolute top-0 end-0"
+              title="Delete Ad Request"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                class="bi bi-trash"
+                viewBox="0 0 16 16"
+              >
+                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
+                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z" />
+              </svg>
+            </button>
+
+            <!-- Ad Request Details -->
+            <h5 class="card-title">{{ adRequest.influencer_name }}</h5>
+            <p class="card-text"><strong>Requirements:</strong> {{ adRequest.requirements }}</p>
+            <p class="card-text"><strong>Payment:</strong> ₹{{ adRequest.payment_amount }}</p>
+            <p class="card-text"><strong>Status:</strong> {{ adRequest.status }}</p>
+
+            <!-- Action Buttons -->
+            <div>
+              <button
+                v-if="isSponsor && adRequest.status === 'Pending'"
+                @click="openUpdateAdRequestModal(adRequest)"
+                class="btn btn-warning btn-sm"
+              >
+                Update Ad Request
+              </button>
+              <button
+                v-if="adRequest.status === 'Negotiated'"
+                class="btn btn-success me-2"
+                @click="respondToAdRequest(adRequest.id, 'Accepted')"
+              >
+                Accept
+              </button>
+              <button
+                v-if="adRequest.status === 'Negotiated'"
+                class="btn btn-danger me-2"
+                @click="respondToAdRequest(adRequest.id, 'Rejected')"
+              >
+                Reject
+              </button>
+              <button
+                v-if="adRequest.status === 'Negotiated'"
+                class="btn btn-warning"
+                @click="openNegotiateModal(adRequest)"
+              >
+                Negotiate
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   
       <!-- Ad Request Modal -->
       <div v-if="showAdRequestModal" class="modal-backdrop">
@@ -244,6 +306,13 @@
   // Reactive data
   const campaignId = route.params.campaignId;
   const campaignName = ref("");
+  const campaignStatistics = ref({
+  name: "",
+  total_budget: 0,
+  spent_budget: 0,
+  remaining_budget: 0,
+  ad_request_counts: {},
+});
   const adRequests = ref([]);
   const influencers = ref([]);
   const searchQuery = ref("");
@@ -530,11 +599,42 @@ async function submitNegotiation() {
     messageStore.setFlashMessage('An error occurred while negotiating.', 'error');
   }
 }
-  
+// Fetch Campaign Statistics
+async function fetchCampaignStatistics() {
+  try {
+    const response = await fetch(
+      `${authStore.getBackendServerURL()}/sponsor/campaign-statistics/${campaignId}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authentication-Token": authStore.getAuthToken(),
+        },
+      }
+    );
+
+    const data = await response.json();
+    if (response.ok) {
+      campaignStatistics.value = data.campaign_statistics;
+    } else {
+      messageStore.setFlashMessage(
+        data.message || "Failed to fetch campaign statistics.",
+        "error"
+      );
+    }
+  } catch (error) {
+    console.error("Error fetching campaign statistics:", error);
+    messageStore.setFlashMessage(
+      "An error occurred while fetching campaign statistics.",
+      "error"
+    );
+  }
+}
+
   // Lifecycle hooks
   onMounted(() => {
     fetchCampaignAdRequests();
     fetchInfluencers();
+    fetchCampaignStatistics();
   });
   </script>
   
@@ -556,5 +656,13 @@ async function submitNegotiation() {
     width: 90%;
     max-width: 500px;
   }
+  .card {
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.card-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
   </style>
   

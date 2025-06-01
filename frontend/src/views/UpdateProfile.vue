@@ -84,7 +84,7 @@
   </template>
   
   <script setup>
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/auth_store';
   import { useMessageStore } from '@/stores/messageStore';
@@ -135,5 +135,10 @@
       console.error('Update Profile Error:', error);
     }
   }
+  // Ensure the form is pre-populated when the component is mounted
+onMounted(() => {
+  // Log user details to confirm prepopulation
+  console.log('userDetails:', userDetails);
+});
   </script>
   

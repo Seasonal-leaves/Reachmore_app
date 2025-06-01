@@ -1100,6 +1100,67 @@ class CampaignStatisticsAPI(Resource):
         except Exception as e:
             return make_response(jsonify({'message': 'Internal server error', 'error': str(e)}), 500)
 
+# class SponsorDashboardResource(Resource):
+#     @auth_token_required
+#     @roles_required('sponsor')
+#     def get(self):
+#         try:
+#             user = current_user  # The current sponsor user
+#             # Get campaigns related to this sponsor
+#             campaigns = Campaign.query.filter_by(sponsor_id=user.user_id).all()
+
+#             total_campaigns = len(campaigns)
+#             active_campaigns = sum(1 for campaign in campaigns if campaign.status == 'active')
+#             paused_campaigns = sum(1 for campaign in campaigns if campaign.status == 'paused')
+#             completed_campaigns = sum(1 for campaign in campaigns if campaign.status == 'completed')
+
+#             # Ad request statistics
+#             total_ad_requests = 0
+#             accepted_ad_requests = 0
+#             rejected_ad_requests = 0
+#             for campaign in campaigns:
+#                 ad_requests = AdRequest.query.filter_by(campaign_id=campaign.id).all()
+#                 total_ad_requests += len(ad_requests)
+#                 accepted_ad_requests += sum(1 for ad in ad_requests if ad.status == 'Accepted')
+#                 rejected_ad_requests += sum(1 for ad in ad_requests if ad.status == 'Rejected')
+
+#             # Budget utilization statistics
+#             campaign_budget_utilization = []
+#             for campaign in campaigns:
+#                 total_budget = campaign.budget
+#                 spent_budget = db.session.query(db.func.sum(AdRequest.payment_amount)).filter_by(
+#                     campaign_id=campaign.id,
+#                     status='Accepted'
+#                 ).scalar() or 0
+#                 remaining_budget = total_budget - spent_budget
+#                 campaign_budget_utilization.append({
+#                     'campaign_id': campaign.id,
+#                     'name': campaign.name,
+#                     'total_budget': total_budget,
+#                     'spent_budget': spent_budget,
+#                     'remaining_budget': remaining_budget
+#                 })
+
+#             # Dashboard statistics
+#             dashboard_stats = {
+#                 'total_campaigns': total_campaigns,
+#                 'active_campaigns': active_campaigns,
+#                 'paused_campaigns': paused_campaigns,
+#                 'completed_campaigns': completed_campaigns,
+#                 'total_ad_requests': total_ad_requests,
+#                 'accepted_ad_requests': accepted_ad_requests,
+#                 'rejected_ad_requests': rejected_ad_requests,
+#                 'campaign_budget_utilization': campaign_budget_utilization
+#             }
+
+#             return make_response(jsonify({
+#                 'message': 'Sponsor dashboard statistics retrieved successfully',
+#                 'dashboard_statistics': dashboard_stats
+#             }), 200)
+
+#         except Exception as e:
+#             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
+
 
 class SponsorRespondNegotiationAPI(Resource):
     @auth_token_required
@@ -1198,35 +1259,76 @@ class PublicCampaignSearchAPI(Resource):
         except Exception as e:
             return make_response(jsonify({'message': 'Internal error', 'error': str(e)}), 500)
 
+# class InfluencerAdRequestsAPI(Resource):
+#     @auth_token_required
+#     @roles_required('influencer')
+#     def get(self):
+#         try:
+#             # Fetch ad requests for the logged-in influencer, excluding flagged campaigns
+#             ad_requests = AdRequest.query.filter(
+#                 AdRequest.influencer_id == current_user.user_id,
+#                 AdRequest.campaign_id.notin_(
+#                     db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
+#                 )
+#             ).join(Campaign).add_columns(
+#                 Campaign.name.label('campaign_name'),
+#                 Campaign.description.label('campaign_description'),
+#                 Campaign.start_date,
+#                 Campaign.budget
+#             ).all()
+
+#             # Format response
+#             ad_request_data = [
+#                 {
+#                     'ad_request_id': ad_request.AdRequest.id,
+#                     'campaign_id': ad_request.AdRequest.campaign_id,
+#                     'campaign_name': ad_request.campaign_name,
+#                     'campaign_description': ad_request.campaign_description,
+#                     'messages': ad_request.AdRequest.messages,
+#                     'requirements': ad_request.AdRequest.requirements,
+#                     'payment_amount': ad_request.AdRequest.payment_amount,
+#                     'status': ad_request.AdRequest.status
+#                 }
+#                 for ad_request in ad_requests
+#             ]
+
+#             return make_response(jsonify({
+#                 'message': 'Ad requests retrieved successfully',
+#                 'ad_requests': ad_request_data
+#             }), 200)
+
+#         except Exception as e:
+#             return make_response(jsonify({'message': 'Internal server error', 'error': str(e)}), 500)
+
+from sqlalchemy import select
+
 class InfluencerAdRequestsAPI(Resource):
     @auth_token_required
     @roles_required('influencer')
     def get(self):
         try:
-            # Fetch ad requests for the logged-in influencer, excluding flagged campaigns
-            ad_requests = AdRequest.query.filter(
-                AdRequest.influencer_id == current_user.user_id,
-                AdRequest.campaign_id.notin_(
-                    db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
-                )
-            ).join(Campaign).add_columns(
-                Campaign.name.label('campaign_name'),
-                Campaign.description.label('campaign_description'),
-                Campaign.start_date,
-                Campaign.budget
+            # Step 1: Join AdRequest with Campaign and Flag tables
+            ad_requests = db.session.query(AdRequest, Campaign).join(
+                Campaign, AdRequest.campaign_id == Campaign.id  # Join AdRequest with Campaign
+            ).outerjoin(
+                Flag, Flag.flagged_campaign_id == Campaign.id  # Outer join Flag table to Campaign
+            ).filter(
+                AdRequest.influencer_id == current_user.user_id,  # Only this influencer's requests
+                # Campaign.visibility == 'public',  # Only public campaigns
+                (Flag.status != 'Pending') | (Flag.flagged_campaign_id == None)  # Exclude flagged campaigns where status is 'Pending', allow campaigns with no flags
             ).all()
 
-            # Format response
+            # Step 2: Format response
             ad_request_data = [
                 {
-                    'ad_request_id': ad_request.AdRequest.id,
-                    'campaign_id': ad_request.AdRequest.campaign_id,
-                    'campaign_name': ad_request.campaign_name,
-                    'campaign_description': ad_request.campaign_description,
-                    'messages': ad_request.AdRequest.messages,
-                    'requirements': ad_request.AdRequest.requirements,
-                    'payment_amount': ad_request.AdRequest.payment_amount,
-                    'status': ad_request.AdRequest.status
+                    'ad_request_id': ad_request[0].id,  # Access the AdRequest.id (first element)
+                    'campaign_id': ad_request[0].campaign_id,  # Access the Campaign.id (first element)
+                    'campaign_name': ad_request[1].name,  # Access the Campaign.name (second element)
+                    'campaign_description': ad_request[1].description,  # Access Campaign.description
+                    'messages': ad_request[0].messages,  # Access the messages from AdRequest
+                    'requirements': ad_request[0].requirements,  # Access the requirements from AdRequest
+                    'payment_amount': ad_request[0].payment_amount,  # Access payment amount from AdRequest
+                    'status': ad_request[0].status  # Access status from AdRequest
                 }
                 for ad_request in ad_requests
             ]
@@ -1237,7 +1339,10 @@ class InfluencerAdRequestsAPI(Resource):
             }), 200)
 
         except Exception as e:
+            # Log the error and send the response
+            app.logger.error(f"Error in InfluencerAdRequestsAPI: {str(e)}")
             return make_response(jsonify({'message': 'Internal server error', 'error': str(e)}), 500)
+
 
 class InfluencerRespondAdRequestAPI(Resource):
     @auth_token_required
@@ -1280,20 +1385,112 @@ class InfluencerRespondAdRequestAPI(Resource):
             return make_response(jsonify({'message': 'Internal server error', 'error': str(e)}), 500)
 
 
+# class InfluencerCreateAdRequestAPI(Resource):
+#     @auth_token_required
+#     @roles_required('influencer')
+#     def post(self, campaign_id):
+#         try:
+#             # Fetch the public, non-flagged campaign
+#             # campaign = Campaign.query.filter(
+#             #     Campaign.id == campaign_id,
+#             #     Campaign.visibility == 'public',
+#             #     Campaign.id.notin_(
+#             #         db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
+#             #     )
+#             # ).first()
+#            # Step 1: Fetch all public campaigns
+#             # all_public_campaigns = Campaign.query.filter(Campaign.visibility == 'public').all()
+
+#             # # Step 2: Get IDs of campaigns with "Pending" flags
+#             # flagged_campaign_ids = [
+#             #     flag.flagged_campaign_id for flag in Flag.query.filter(Flag.status == 'Pending').all()
+#             # ]
+
+#             # # Step 3: Filter out flagged campaigns with "Pending" status
+#             # unflagged_campaigns = [
+#             #     campaign for campaign in all_public_campaigns if campaign.id not in flagged_campaign_ids
+#             # ]
+
+#             # Step 1: Find the campaign with the specified ID
+#             campaign = Campaign.query.filter(
+#     Campaign.id == campaign_id  # Campaign ID matches the provided campaign_id
+# ).first()
+
+#             # Step 2: If campaign exists, check its visibility
+#         if campaign and campaign.visibility == 'public':
+    
+#             # Step 3: Get the list of campaigns that are flagged with status 'Pending'
+#          flagged_campaign_ids = db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending').all()
+    
+#         # Step 4: Check if the current campaign ID is not in the list of flagged campaign IDs
+#         if campaign.id not in [flagged_campaign_id[0] for flagged_campaign_id in flagged_campaign_ids]:
+#             # This campaign is valid (public and not flagged as 'Pending')
+#             return campaign
+
+#             # Check if an ad request already exists for this campaign and influencer
+#             existing_ad_request = AdRequest.query.filter_by(
+#                 campaign_id=campaign_id,
+#                 influencer_id=current_user.user_id
+#             ).first()
+
+#             if existing_ad_request:
+#                 return make_response(jsonify({'message': 'An ad request for this campaign already exists'}), 400)
+
+#             if not campaign:
+#                 return make_response(jsonify({'message': 'Campaign not found or it is flagged'}), 404)
+
+#             # Parse request data
+#             data = request.get_json()
+#             requirements = data.get('requirements')
+#             payment_amount = data.get('payment_amount')
+
+#             if not requirements or not payment_amount:
+#                 return make_response(jsonify({'message': 'Requirements and payment amount are required'}), 400)
+
+#             # Create a new ad request
+#             ad_request = AdRequest(
+#                 campaign_id=campaign_id,
+#                 influencer_id=current_user.user_id,
+#                 messages=data.get('message', 'Ad request created by influencer'),
+#                 requirements=requirements,
+#                 payment_amount=payment_amount,
+#                 status='Negotiated'
+#             )
+
+#             db.session.add(ad_request)
+#             db.session.commit()
+
+#             return make_response(jsonify({
+#                 'message': 'Ad request created successfully',
+#                 'ad_request_id': ad_request.id,
+#                 'campaign_id': campaign_id,
+#                 'status': ad_request.status
+#             }), 201)
+
+#         except Exception as e:
+#             db.session.rollback()
+#             return make_response(jsonify({'message': 'Internal server error', 'error': str(e)}), 500)
 class InfluencerCreateAdRequestAPI(Resource):
     @auth_token_required
     @roles_required('influencer')
     def post(self, campaign_id):
         try:
-            # Fetch the public, non-flagged campaign
+            # Step 1: Fetch the public campaign
             campaign = Campaign.query.filter(
                 Campaign.id == campaign_id,
-                Campaign.visibility == 'public',
-                Campaign.id.notin_(
-                    db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending')
-                )
+                Campaign.visibility == 'public'
             ).first()
-            # Check if an ad request already exists for this campaign and influencer
+
+            # Step 2: Check if campaign exists
+            if not campaign:
+                return make_response(jsonify({'message': 'Campaign not found or it is not public'}), 404)
+            
+            # Step 3: Check if the campaign is flagged
+            flagged_campaign_ids = db.session.query(Flag.flagged_campaign_id).filter(Flag.status == 'Pending').all()
+            if campaign.id in [flagged_campaign_id[0] for flagged_campaign_id in flagged_campaign_ids]:
+                return make_response(jsonify({'message': 'Campaign is flagged and cannot be used for ad requests'}), 400)
+
+            # Step 4: Check if the influencer has already made an ad request for this campaign
             existing_ad_request = AdRequest.query.filter_by(
                 campaign_id=campaign_id,
                 influencer_id=current_user.user_id
@@ -1302,37 +1499,31 @@ class InfluencerCreateAdRequestAPI(Resource):
             if existing_ad_request:
                 return make_response(jsonify({'message': 'An ad request for this campaign already exists'}), 400)
 
-            if not campaign:
-                return make_response(jsonify({'message': 'Campaign not found or it is flagged'}), 404)
-
-            # Parse request data
+            # Step 5: Parse the request data (requirements and payment amount)
             data = request.get_json()
             requirements = data.get('requirements')
             payment_amount = data.get('payment_amount')
 
+            # Step 6: Validate the input
             if not requirements or not payment_amount:
                 return make_response(jsonify({'message': 'Requirements and payment amount are required'}), 400)
 
-            # Create a new ad request
+            # Step 7: Create a new ad request
             ad_request = AdRequest(
                 campaign_id=campaign_id,
                 influencer_id=current_user.user_id,
                 messages=data.get('message', 'Ad request created by influencer'),
                 requirements=requirements,
                 payment_amount=payment_amount,
-                status='Negotiated'
+                status='Negotiated'  # Default status for new ad requests
             )
 
+            # Step 8: Add the ad request to the session and commit to the database
             db.session.add(ad_request)
             db.session.commit()
 
-            return make_response(jsonify({
-                'message': 'Ad request created successfully',
-                'ad_request_id': ad_request.id,
-                'campaign_id': campaign_id,
-                'status': ad_request.status
-            }), 201)
+            # Return success message
+            return make_response(jsonify({'message': 'Ad request created successfully'}), 201)
 
         except Exception as e:
-            db.session.rollback()
-            return make_response(jsonify({'message': 'Internal server error', 'error': str(e)}), 500)
+            return make_response(jsonify({'message': str(e)}), 500)

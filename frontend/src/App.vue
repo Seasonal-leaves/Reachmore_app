@@ -116,9 +116,9 @@ function logout() {
 
           <!-- Influencer Links -->
           <template v-if="isInfluencer">
-            <li class="nav-item">
+            <!-- <li class="nav-item">
               <RouterLink to="/influencer/search-campaigns" class="nav-link">Search Campaigns</RouterLink>
-            </li>
+            </li> -->
             <router-link
   to="/influencer/ad-requests"
   class="btn btn-outline-primary mx-2"
